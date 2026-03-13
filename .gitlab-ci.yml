@@ -1,0 +1,12 @@
+image: eclipse-temurin:8-jdk
+
+stages:
+  - build
+
+dist:
+  stage: build
+  script:
+    - ./gradlew dist
+  artifacts:
+    paths:
+      - build/distributions

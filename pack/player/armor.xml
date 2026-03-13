@@ -1,0 +1,104 @@
+<armor>
+    <helmets>
+        <model.armour.head.greathelmHornedOfGold.glimmersteel>
+            <default>
+                <male>
+                    <removeHead/>
+                    <removeMask/>
+                </male>
+            </default>
+        </model.armour.head.greathelmHornedOfGold.glimmersteel>
+    </helmets>
+
+    <dragonScaleGlimmersteel>
+        <model.armour.torso.dragon.scale.leather.glimmersteel>
+            <default>
+                <male>
+                    <meshPlace>torso</meshPlace>
+                    <meshName>torso06</meshName>
+                    <texturePlace>torso</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_jacket_torso_hasAlpha.png</texture>
+
+                    <meshPlace>UA</meshPlace>
+                    <meshName>UA00</meshName>
+                    <texturePlace>UA</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_jacket_UA.png</texture>
+
+                    <meshPlace>LA</meshPlace>
+                    <meshName>LA00</meshName>
+                    <texturePlace>LA</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_jacket_LA_hasAlpha.png</texture>
+
+                    <meshPlace>tasset</meshPlace>
+                    <meshName>tasset06</meshName>
+                    <texturePlace>tasset</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_jacket_tasset.png</texture>
+                </male>
+            </default>
+        </model.armour.torso.dragon.scale.leather.glimmersteel>
+
+        <model.armour.sleeve.dragon.scale.leather.glimmersteel>
+            <default>
+                <male>
+                    <meshPlace>UA</meshPlace>
+                    <meshName>UA06</meshName>
+                    <texturePlace>UA</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_sleeve_UA.png</texture>
+
+                    <meshPlace>LA</meshPlace>
+                    <meshName>LA00</meshName>
+                    <texturePlace>LA</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_sleeve_LL.png</texture>
+                </male>
+            </default>
+        </model.armour.sleeve.dragon.scale.leather.glimmersteel>
+
+        <model.armour.hand.dragon.scale.leather.glimmersteel>
+            <default>
+                <male>
+                    <meshPlace>LA</meshPlace>
+                    <meshName>LA06</meshName>
+                    <texturePlace>LA</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_glove_LA.png</texture>
+
+                    <meshPlace>hand</meshPlace>
+                    <meshName>hand06</meshName>
+                    <texturePlace>hand</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_glove_hand.png</texture>
+                </male>
+            </default>
+        </model.armour.hand.dragon.scale.leather.glimmersteel>
+
+        <model.armour.leg.dragon.scale.leather.glimmersteel>
+            <default>
+                <male>
+                    <meshPlace>legs</meshPlace>
+                    <meshName>legs06</meshName>
+                    <texturePlace>legs</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_pants_legs.png</texture>
+
+                    <meshPlace>LL</meshPlace>
+                    <meshName>LL00</meshName>
+                    <texturePlace>LL</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_pants_LL.png</texture>
+                </male>
+            </default>
+        </model.armour.leg.dragon.scale.leather.glimmersteel>
+
+        <model.armour.foot.dragon.scale.leather.glimmersteel>
+            <default>
+                <male>
+                    <meshPlace>LL</meshPlace>
+                    <meshName>LL06</meshName>
+                    <texturePlace>LL</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_boots_LL.png</texture>
+
+                    <meshPlace>foot</meshPlace>
+                    <meshName>foot06</meshName>
+                    <texturePlace>foot</texturePlace>
+                    <texture>textures/DragonScale/glimmersteel/dragonScale_boots_foot.png</texture>
+                </male>
+            </default>
+        </model.armour.foot.dragon.scale.leather.glimmersteel>
+    </dragonScaleGlimmersteel>
+</armor>

@@ -1,0 +1,2 @@
+model.armour.head.greathelmHornedOfGold.glimmersteel = player/helms/Horned_Helmet_of_Glimmersteel.dae
+armor.xml = player/armor.xml

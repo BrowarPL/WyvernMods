@@ -1,0 +1,62 @@
+apply plugin: 'java'
+
+group "mod.sin"
+version "ty3.1.2"
+
+repositories {
+    mavenCentral()
+    maven { url "https://gotti.no-ip.org/maven/repository" }
+    maven { url 'https://jitpack.io' }
+    maven { url "https://gitlab.com/api/v4/groups/83701471/-/packages/maven" }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+var serverJar = files("../../libraries/server.jar")
+var commonJar = files("../../libraries/common.jar")
+
+dependencies {
+    if(serverJar){
+        implementation(serverJar)
+    }
+    if(commonJar){
+        implementation(commonJar)
+    }
+    compileOnly 'org.gotti.wurmunlimited:server:3720466'
+    compileOnly 'org.gotti.wurmunlimited:common:3720466'
+    compileOnly 'org.gotti.wurmunlimited:server-modlauncher:0.45'
+    compileOnly 'com.github.Sindusk:sindusklibrary:v2.5'
+    compileOnly 'com.github.bdew-wurm:bdew_server_mod_tools:v2.1.0'
+    compileOnly 'org.nyxcode.wurm:DiscordRelay:ty3.6.2'
+    compileOnly 'com.github.Sindusk:DUSKombat:v1.0'
+    compileOnly 'com.github.Sindusk:TreasureHunting:v2.1'
+    compileOnly 'org.tyoda.wurm.Iconzz:Iconzz:0.1.4.2'
+}
+
+jar {
+    archiveName "${project.name}.jar"
+}
+
+task pack(type: Zip) {
+    from fileTree(dir: 'pack', include: '**')
+    destinationDirectory = file("build/pack")
+    archiveName "wyvernmods-ty-pack.jar"
+}
+
+task dist(type: Zip) {
+    into("mods", {
+        into("${project.name}", {
+            from jar
+            from pack
+            into("icons", {
+                from fileTree(dir: "mods/WyvernMods/icons", include: '*')
+            })
+        })
+        from fileTree(dir: 'mods', include: '*')
+    })
+
+    archiveName "${project.name}-${project.version}.zip"
+}
