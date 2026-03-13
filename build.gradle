@@ -37,16 +37,16 @@ dependencies {
 }
 
 jar {
-    archiveName "${project.name}.jar"
+    archiveFileName = "${project.name}.jar"
 }
 
-task pack(type: Zip) {
+tasks.register('pack', Zip) {
     from fileTree(dir: 'pack', include: '**')
     destinationDirectory = file("build/pack")
-    archiveName "wyvernmods-ty-pack.jar"
+    archiveFileName = "wyvernmods-ty-pack.jar"
 }
 
-task dist(type: Zip) {
+tasks.register('dist', Zip) {
     into("mods", {
         into("${project.name}", {
             from jar
@@ -58,5 +58,5 @@ task dist(type: Zip) {
         from fileTree(dir: 'mods', include: '*')
     })
 
-    archiveName "${project.name}-${project.version}.zip"
+    archiveFileName = "${project.name}-${project.version}.zip"
 }

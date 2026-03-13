@@ -2,12 +2,9 @@ package mod.sin.wyvern;
 
 import com.wurmonline.server.Items;
 import com.wurmonline.server.NoSuchItemException;
-import com.wurmonline.server.NoSuchPlayerException;
 import com.wurmonline.server.creatures.Creature;
-import com.wurmonline.server.creatures.NoSuchCreatureException;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.items.ItemList;
-import com.wurmonline.server.zones.NoSuchZoneException;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -65,23 +62,15 @@ public class QualityOfLife {
         }
         return null;
     }
-    public static void vehicleHook(Creature performer, Item item){
+    @SuppressWarnings("unused")
+    public static boolean vehicleHook(Creature performer, Item item) {
         Item vehicleItem = getVehicleSafe(performer);
-        if(vehicleItem != null && vehicleItem.isHollow()){
-            if(insertItemIntoVehicle(item, vehicleItem, performer)){
-                return;
-            }
-        }
 
-        // Last resort, if no suitable vehicle is found.
-        try {
-            item.putItemInfrontof(performer);
-        } catch (NoSuchCreatureException | NoSuchItemException | NoSuchPlayerException | NoSuchZoneException e) {
-            logger.log(Level.WARNING, "", e);
-        }
+        // Simplified boolean return to satisfy IDE and Clean Code rules
+        return vehicleItem != null && vehicleItem.isHollow() && insertItemIntoVehicle(item, vehicleItem, performer);
     }
-    public static void preInit(){
-        try{
+    public static void preInit() {
+        try {
             ClassPool classPool = HookManager.getInstance().getClassPool();
             final Class<QualityOfLife> thisClass = QualityOfLife.class;
             String replace;
@@ -91,39 +80,29 @@ public class QualityOfLife {
             CtClass ctItem = classPool.get("com.wurmonline.server.items.Item");
             CtClass ctCaveWallBehaviour = classPool.get("com.wurmonline.server.behaviours.CaveWallBehaviour");
             CtClass[] params1 = {
-                    ctAction,
-                    ctCreature,
-                    ctItem,
-                    CtClass.intType,
-                    CtClass.intType,
-                    CtClass.booleanType,
-                    CtClass.intType,
-                    CtClass.intType,
-                    CtClass.intType,
-                    CtClass.shortType,
-                    CtClass.floatType
+                    ctAction, ctCreature, ctItem, CtClass.intType, CtClass.intType,
+                    CtClass.booleanType, CtClass.intType, CtClass.intType,
+                    CtClass.intType, CtClass.shortType, CtClass.floatType
             };
             String desc1 = Descriptor.ofMethod(CtClass.booleanType, params1);
+
             if (WyvernMods.mineCaveToVehicle) {
                 Util.setReason("Allow players to mine directly into vehicles.");
-                replace = "$_ = null;"
-                        + QualityOfLife.class.getName() + ".vehicleHook(performer, $0);";
+                replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook(performer, $0)) { $_ = $proceed($$); }";
                 Util.instrumentDescribed(thisClass, ctCaveWallBehaviour, "action", desc1, "putItemInfrontof", replace);
             }
 
             CtClass ctTileRockBehaviour = classPool.get("com.wurmonline.server.behaviours.TileRockBehaviour");
             if (WyvernMods.mineSurfaceToVehicle) {
                 Util.setReason("Allow players to surface mine directly into vehicles.");
-                replace = "$_ = $proceed($$);" +
-                        QualityOfLife.class.getName() + ".vehicleHook(performer, $0);";
+                replace = "$_ = $proceed($$); " + QualityOfLife.class.getName() + ".vehicleHook(performer, $0);";
                 Util.instrumentDeclared(thisClass, ctTileRockBehaviour, "mine", "setDataXY", replace);
             }
 
             CtClass ctMethodsItems = classPool.get("com.wurmonline.server.behaviours.MethodsItems");
             if (WyvernMods.chopLogsToVehicle) {
                 Util.setReason("Allow players to chop logs directly into vehicles.");
-                replace = "$_ = null;" +
-                        QualityOfLife.class.getName() + ".vehicleHook(performer, $0);";
+                replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook(performer, $0)) { $_ = $proceed($$); }";
                 Util.instrumentDeclared(thisClass, ctMethodsItems, "chop", "putItemInfrontof", replace);
             }
 
@@ -134,28 +113,14 @@ public class QualityOfLife {
                 Util.setBodyDescribed(thisClass, ctItem, "isHolyItem", desc100, replace);
             }
 
-            /* Disabled in Wurm Unlimited 1.9 - Priest Rework changes removed this restriction.
-
-            Util.setReason("Remove requirement for Libila priests to bless creatures before taming.");
-            CtClass ctMethodsCreatures = classPool.get("com.wurmonline.server.behaviours.MethodsCreatures");
-            replace = "$_ = false;";
-            Util.instrumentDeclared(thisClass, ctMethodsCreatures, "tame", "isPriest", replace);*/
-
             if (WyvernMods.mineGemsToVehicle) {
                 Util.setReason("Send gems, source crystals, flint, etc. into vehicle.");
                 CtClass[] params2 = {
-                        CtClass.intType,
-                        CtClass.intType,
-                        CtClass.intType,
-                        CtClass.intType,
-                        ctCreature,
-                        CtClass.doubleType,
-                        CtClass.booleanType,
-                        ctAction
+                        CtClass.intType, CtClass.intType, CtClass.intType, CtClass.intType,
+                        ctCreature, CtClass.doubleType, CtClass.booleanType, ctAction
                 };
                 String desc2 = Descriptor.ofMethod(ctItem, params2);
-                replace = "$_ = null;" +
-                        QualityOfLife.class.getName() + ".vehicleHook(performer, $0);";
+                replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook(performer, $0)) { $_ = $proceed($$); }";
                 Util.instrumentDescribed(thisClass, ctTileRockBehaviour, "createGem", desc2, "putItemInfrontof", replace);
             }
 
@@ -169,10 +134,10 @@ public class QualityOfLife {
                     }
                 });
             }
-        } catch ( NotFoundException | IllegalArgumentException | ClassCastException e) {
+        } catch (NotFoundException | IllegalArgumentException | ClassCastException e) {
             throw new HookException(e);
         } catch (CannotCompileException e) {
-            logger.log(Level.WARNING, "", e);
+            logger.log(Level.WARNING, "Failed to compile Javassist hook in QualityOfLife", e);
         }
     }
 }
