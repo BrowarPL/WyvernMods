@@ -1,6 +1,7 @@
 package mod.sin.weapons;
 
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.gotti.wurmunlimited.modsupport.ItemTemplateBuilder;
@@ -18,53 +19,61 @@ import mod.sin.weapons.titan.WilhelmsWrath;
 public class Eviscerator {
 	public static final Logger logger = Logger.getLogger(Eviscerator.class.getName());
 	public static int templateId;
-	private static final String name = "eviscerator";
-	public void createTemplate() throws IOException{
-		/*  ItemTemplateCreator.createItemTemplate(337,
-		 * "Hammer of Magranon", "hammers of magranon", "excellent", "good", "ok", "poor",
-		 * "A huge brutal warhammer made totally from bronze.",
-		 * new short[]{52, 48, 69, 37, 14, 40, 71},
-		 * 1339, 35, 80, Long.MAX_VALUE, 5, 10, 80, 10070, MiscConstants.EMPTY_BYTE_PRIMITIVE_ARRAY,
-		 * "model.artifact.hammerhuge.", 99.0f, 7000, 31, 3000000, false);
-		 */
-		ItemTemplateBuilder itemBuilder = new ItemTemplateBuilder("mod.item.eviscerator");
-		itemBuilder.name(name, "eviscerators", "A one-handed scythe of despair, optimal for the Genocide of entire species.");
-		itemBuilder.itemTypes(new short[]{ // new short[]{108, 44, 147, 22, 37, 14, 189} - Large Maul
-				ItemTypes.ITEM_TYPE_NAMED,
-				ItemTypes.ITEM_TYPE_REPAIRABLE,
-				ItemTypes.ITEM_TYPE_METAL,
-				ItemTypes.ITEM_TYPE_WEAPON,
-				ItemTypes.ITEM_TYPE_WEAPON_SLASH
-		});
-		itemBuilder.imageNumber((short) 753);
-		itemBuilder.behaviourType((short) 35);
-		itemBuilder.combatDamage(40);
-		itemBuilder.decayTime(Long.MAX_VALUE);
-		itemBuilder.dimensions(5, 10, 80);
-		itemBuilder.primarySkill(SkillList.SCYTHE);
-		itemBuilder.bodySpaces(MiscConstants.EMPTY_BYTE_PRIMITIVE_ARRAY);
-		itemBuilder.modelName("model.weapon.scythe.");
-		itemBuilder.difficulty(90.0f);
-		itemBuilder.weightGrams(500);
-		itemBuilder.material(Materials.MATERIAL_ADAMANTINE);
-		itemBuilder.value(1000);
+	private static final String NAME = "eviscerator";
 
-		ItemTemplate template = itemBuilder.build();
-		templateId = template.getTemplateId();
-		logger.info(name+" TemplateID: "+templateId);
+	public void createTemplate() throws IOException {
+		try {
+			ItemTemplateBuilder itemBuilder = new ItemTemplateBuilder("mod.item.eviscerator");
+			itemBuilder.name(NAME, "eviscerators", "A one-handed scythe of despair, optimal for the Genocide of entire species.");
+			itemBuilder.itemTypes(new short[]{
+					ItemTypes.ITEM_TYPE_NAMED,
+					ItemTypes.ITEM_TYPE_REPAIRABLE,
+					ItemTypes.ITEM_TYPE_METAL,
+					ItemTypes.ITEM_TYPE_WEAPON,
+					ItemTypes.ITEM_TYPE_WEAPON_SLASH
+			});
+			itemBuilder.imageNumber((short) 753);
+			itemBuilder.behaviourType((short) 35);
+			itemBuilder.combatDamage(40);
+			itemBuilder.decayTime(Long.MAX_VALUE);
+			itemBuilder.dimensions(5, 10, 80);
+			itemBuilder.primarySkill(SkillList.SCYTHE);
+			itemBuilder.bodySpaces(MiscConstants.EMPTY_BYTE_PRIMITIVE_ARRAY);
+			itemBuilder.modelName("model.weapon.scythe.");
+			itemBuilder.difficulty(90.0f);
+			itemBuilder.weightGrams(500);
+			itemBuilder.material(Materials.MATERIAL_ADAMANTINE);
+			itemBuilder.value(1000);
+
+			ItemTemplate template = itemBuilder.build();
+			if (template != null) {
+				templateId = template.getTemplateId();
+				logger.info(NAME + " TemplateID: " + templateId);
+			} else {
+				logger.warning("Failed to create " + NAME + " template: build returned null");
+			}
+		} catch (Exception e) {
+			logger.log(Level.SEVERE, "Error creating " + NAME + " template", e);
+			throw new IOException("Failed to create " + NAME + " template", e);
+		}
 	}
-	public void initCreationEntry(){
+
+	public void initCreationEntry() {
 		logger.info("initCreationEntry()");
-		if(templateId > 0){
-			logger.info("Creating "+name+" creation entry, ID = "+templateId);
-			CreationEntryCreator.createSimpleEntry(SkillList.GROUP_SMITHING_WEAPONSMITHING, WilhelmsWrath.templateId, WilhelmsWrath.templateId,
-					templateId, true, true, 0.0f, false, false, CreationCategories.WEAPONS);
-			//final AdvancedCreationEntry entry = CreationEntryCreator.createAdvancedEntry(SkillList.SMITHING_WEAPON_HEADS,
-			//		ItemList.ironBand, ItemList.shaft, templateId, false, false, 0f, true, false, CreationCategories.TOOLS);
-			//entry.addRequirement(new CreationRequirement(1, ItemList.woodenHandleSword, 2, true));
-			//entry.addRequirement(new CreationRequirement(2, ItemList.nailsIronSmall, 1, true));
-		}else{
-			logger.info(name+" does not have a template ID on creation entry.");
+		if (templateId > 0) {
+			logger.info("Creating " + NAME + " creation entry, ID = " + templateId);
+			try {
+				if (WilhelmsWrath.templateId > 0) {
+					CreationEntryCreator.createSimpleEntry(SkillList.GROUP_SMITHING_WEAPONSMITHING, WilhelmsWrath.templateId, WilhelmsWrath.templateId,
+							templateId, true, true, 0.0f, false, false, CreationCategories.WEAPONS);
+				} else {
+					logger.warning("WilhelmsWrath template ID is not initialized, skipping creation entry");
+				}
+			} catch (Exception e) {
+				logger.log(Level.SEVERE, "Error creating " + NAME + " creation entry", e);
+			}
+		} else {
+			logger.warning(NAME + " does not have a template ID on creation entry.");
 		}
 	}
 }

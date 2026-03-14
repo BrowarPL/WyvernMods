@@ -42,10 +42,10 @@ import java.util.logging.Logger;
 
 public class MiscChanges {
     public static final Logger logger = Logger.getLogger(MiscChanges.class.getName());
+
     @SuppressWarnings("Convert2Lambda")
     public static void sendServerTabMessage(String channel, final String message, final int red, final int green, final int blue){
         DiscordRelay.sendToDiscord(channel, message, true);
-        // WARNING: Never change this from a new Runnable. Lambdas are a lie and will break everything.
         Runnable r = new Runnable() {
             @Override
             public void run() {
@@ -58,9 +58,11 @@ public class MiscChanges {
         };
         r.run();
     }
+
     public static void sendGlobalFreedomChat(final Creature sender, final String message, final int red, final int green, final int blue){
         sendGlobalFreedomChat(sender, sender.getNameWithoutPrefixes(), message, red, green, blue);
     }
+
     @SuppressWarnings("Convert2Lambda")
     public static void sendGlobalFreedomChat(final Creature sender, final String name, final String message, final int red, final int green, final int blue){
         Runnable r = new Runnable() {
@@ -83,6 +85,7 @@ public class MiscChanges {
         };
         r.run();
     }
+
     @SuppressWarnings("unused")
     public static void broadCastDeathsPvE(Player player, Map<Long, Long> attackers){
         StringBuilder attackerString = new StringBuilder();
@@ -101,13 +104,14 @@ public class MiscChanges {
                 if (creature.isPlayer()) {
                     return;
                 }
+            } catch (NoSuchCreatureException ignored) {
             }
-            catch (NoSuchCreatureException ignored) {}
         }
         if(!attackerString.toString().isEmpty()) {
             Players.getInstance().broadCastDeathInfo(player, attackerString.toString());
         }
     }
+
     @SuppressWarnings("unused")
     public static void broadCastDeaths(Creature player, String slayers){
         String slayMessage = "slain by ";
@@ -116,55 +120,60 @@ public class MiscChanges {
         addPlayerStatsKill(slayers);
         DiscordRelay.sendToDiscord("deaths", player.getName()+" "+slayMessage+slayers, true);
     }
+
     public static void addPlayerStat(String playerName, String stat){
         Connection dbcon = ModSupportDb.getModSupportDb();
         PreparedStatement ps = null;
         try {
-            ps = dbcon.prepareStatement("UPDATE PlayerStats SET "+stat+" = "+stat+" + 1 WHERE NAME = \""+playerName+"\"");
+            ps = dbcon.prepareStatement("UPDATE PlayerStats SET " + stat + " = " + stat + " + 1 WHERE NAME = ?");
+            ps.setString(1, playerName);
             ps.executeUpdate();
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
-        }
-        finally{
+        } finally{
             DbUtilities.closeDatabaseObjects(ps, null);
             DbConnector.returnConnection(dbcon);
         }
     }
+
     public static void addPlayerStatsDeath(String playerName){
         Connection dbcon = ModSupportDb.getModSupportDb();
         PreparedStatement ps = null;
         try {
-            ps = dbcon.prepareStatement("UPDATE PlayerStats SET DEATHS = DEATHS + 1 WHERE NAME = \""+playerName+"\"");
+            ps = dbcon.prepareStatement("UPDATE PlayerStats SET DEATHS = DEATHS + 1 WHERE NAME = ?");
+            ps.setString(1, playerName);
             ps.executeUpdate();
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
-        }
-        finally{
+        } finally{
             DbUtilities.closeDatabaseObjects(ps, null);
             DbConnector.returnConnection(dbcon);
         }
     }
+
     public static void addPlayerStatsKill(String slayers){
         String[] slayerNames = slayers.split(" ");
         Connection dbcon = ModSupportDb.getModSupportDb();
         PreparedStatement ps = null;
         try {
             for(String slayer : slayerNames) {
-                if(slayer.length() < 2) continue;
-                ps = dbcon.prepareStatement("UPDATE PlayerStats SET KILLS = KILLS + 1 WHERE NAME = \"" + slayer + "\"");
+                if(slayer.length() < 2) {
+                    continue;
+                }
+                ps = dbcon.prepareStatement("UPDATE PlayerStats SET KILLS = KILLS + 1 WHERE NAME = ?");
+                ps.setString(1, slayer);
                 ps.executeUpdate();
+                DbUtilities.closeDatabaseObjects(ps, null);
+                ps = null;
             }
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
-        }
-        finally{
+        } finally{
             DbUtilities.closeDatabaseObjects(ps, null);
             DbConnector.returnConnection(dbcon);
         }
     }
+
     @SuppressWarnings("unused")
     public static boolean checkMayorCommand(Item item, Creature creature){
         if(Servers.localServer.PVPSERVER){
@@ -184,6 +193,7 @@ public class MiscChanges {
         }
         return false;
     }
+
     @SuppressWarnings("unused")
     public static float getFoodOpulenceBonus(Item food){
         float mult = 1.0f;
@@ -192,18 +202,25 @@ public class MiscChanges {
         }
         return food.getFoodComplexity()*mult;
     }
+
+    @SuppressWarnings("unused")
+    public static long getBedBonus(int secs, long bed){
+        return getBedBonus((long) secs, bed);
+    }
+
     @SuppressWarnings("unused")
     public static long getBedBonus(long secs, long bed){
         Optional<Item> beds = Items.getItemOptional(bed);
         if(beds.isPresent()) {
             Item bedItem = beds.get();
             if(bedItem.isBed()){
-                secs *= (long) (1+(bedItem.getCurrentQualityLevel()*0.005f));
+                secs = (long) (secs * (1f + (bedItem.getCurrentQualityLevel() * 0.005f)));
             }
         }
         secs *= 2;
         return secs;
     }
+
     @SuppressWarnings("unused")
     public static boolean royalSmithImprove(Creature performer, Skill improve){
         return performer.isRoyalSmith()
@@ -217,12 +234,33 @@ public class MiscChanges {
                 || improve.getNumber() == SkillList.SMITHING_WEAPON_BLADES
                 || improve.getNumber() == SkillList.SMITHING_WEAPON_HEADS);
     }
+
     @SuppressWarnings("unused")
     public static int getNewFoodFill(float qlevel){
         float startPercent = 0.004f;
         float endPercent = 0.015f;
         return (int) ((startPercent*(1f-qlevel/100f)+endPercent*(qlevel/100f))*65535);
     }
+
+    @SuppressWarnings("unused")
+    public static boolean isCharcoalPile(Item item){
+        return item != null && item.getTemplateId() == 74;
+    }
+
+    // Helper method to check if leather should be treated as combinable for improvement purposes
+    @SuppressWarnings("unused")
+    public static boolean isLeatherAndImprovementAction(Item item) {
+        if (item != null && item.getTemplateId() == 72) { // 72 is leather
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            for (StackTraceElement element : stackTrace) {
+                if (element.getClassName().contains("MethodsItems") && element.getMethodName().equals("improveItem")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @SuppressWarnings("unused")
     public static boolean rollRarityImprove(Item source, int usedWeight){
         int templateWeight = source.getTemplate().getWeightGrams();
@@ -233,22 +271,24 @@ public class MiscChanges {
 
     protected static final int rarityChance = 3600;
     protected static HashMap<Long,Integer> pseudoMap = new HashMap<>();
+
     @SuppressWarnings("unused")
-    public static boolean getRarityWindowChance(long wurmid){ //nextInt checks against 0. False is true, true is false.
+    public static boolean getRarityWindowChance(long wurmid){
         if(pseudoMap.containsKey(wurmid)){
-            int currentChance = pseudoMap.get(wurmid);
+            int currentChance = Math.max(1, pseudoMap.get(wurmid));
             boolean success = Server.rand.nextInt(currentChance) == 0;
             if(success){
-                pseudoMap.put(wurmid, currentChance+rarityChance-1);
+                pseudoMap.put(wurmid, currentChance + rarityChance - 1);
             }else{
-                pseudoMap.put(wurmid, currentChance-1);
+                pseudoMap.put(wurmid, Math.max(1, currentChance - 1));
             }
             return !success;
         }else{
-            pseudoMap.put(wurmid, rarityChance-1);
+            pseudoMap.put(wurmid, rarityChance - 1);
             return !(Server.rand.nextInt(rarityChance) == 0);
         }
     }
+
     @SuppressWarnings("unused")
     public static byte getNewCreationRarity(SimpleCreationEntry entry, Item source, Item target, ItemTemplate template){
         if(source.getRarity() > 0 || target.getRarity() > 0) {
@@ -271,7 +311,7 @@ public class MiscChanges {
             if (entry.depleteSource && entry.depleteTarget) {
                 int min = Math.min(sRarity, tRarity);
                 int max = Math.max(sRarity, tRarity);
-                return (byte) (min+Server.rand.nextInt(1+(max-min)));
+                return (byte) (min + Server.rand.nextInt(1 + (max - min)));
             }
             if(realSource == null || realTarget == null){
                 logger.info("Null source or target.");
@@ -302,9 +342,9 @@ public class MiscChanges {
     public static Titles.Title[] cleanTitles(Titles.Title[] titles){
         ArrayList<Titles.Title> arrTitles = new ArrayList<>();
         for(Titles.Title title : titles){
-            logger.info("Checking title "+title);
+            logger.info("Checking title " + title);
             if(title != null){
-                logger.info("Title "+title.getName()+" is valid.");
+                logger.info("Title " + title.getName() + " is valid.");
                 arrTitles.add(title);
             }else{
                 logger.info("Title invalid. Discarding.");
@@ -315,14 +355,10 @@ public class MiscChanges {
 
     @SuppressWarnings("unused")
     public static boolean shouldSendBuff(SpellEffectsEnum effect){
-        // Continue not showing any that don't have a buff in the first place
         if (!effect.isSendToBuffBar()){
             return false;
         }
-        // Resistances and vulnerabilities are 20 - 43
         return effect.getTypeId() > 43 || effect.getTypeId() < 20;
-
-        // Is send to buff bar and not something we're stopping, so allow it.
     }
 
     public static void changeExistingTitles(){
@@ -335,6 +371,7 @@ public class MiscChanges {
             throw new RuntimeException(e);
         }
     }
+
     @SuppressWarnings("unused")
     public static void preInit(){
         try{
@@ -342,7 +379,6 @@ public class MiscChanges {
             final Class<MiscChanges> thisClass = MiscChanges.class;
             String replace;
 
-            // Class definitions required for descriptors
             CtClass ctItem = classPool.get("com.wurmonline.server.items.Item");
             CtClass ctCreature = classPool.get("com.wurmonline.server.creatures.Creature");
             CtClass ctAction = classPool.get("com.wurmonline.server.behaviours.Action");
@@ -353,37 +389,34 @@ public class MiscChanges {
             CtClass ctServer = classPool.get("com.wurmonline.server.Server");
             CtClass ctCommunicator = classPool.get("com.wurmonline.server.creatures.Communicator");
 
-            // Method descriptors
             CtClass[] paramsImproveItem = { ctAction, ctCreature, ctItem, ctItem, CtClass.floatType };
             String descImproveItem = Descriptor.ofMethod(CtClass.booleanType, paramsImproveItem);
 
             CtClass[] paramsAlterSkill = { CtClass.doubleType, CtClass.booleanType, CtClass.floatType, CtClass.booleanType, CtClass.doubleType };
             String descAlterSkill = Descriptor.ofMethod(CtClass.voidType, paramsAlterSkill);
 
-            // - Change Title so femaleName can be modified - //
-            CtClass ctTitles = classPool.get("com.wurmonline.server.players.Titles");
-            CtClass[] innerClasses = ctTitles.getNestedClasses();
-            for(CtClass innerClass : innerClasses){
-                if(innerClass.getName().equals("Titles")){
-                    CtField femaleName = innerClass.getDeclaredField("femaleName");
-                    femaleName.setModifiers(Modifier.clear(femaleName.getModifiers(), Modifier.FINAL));
-                    break;
-                }
-            }
+            CtClass ctTitle = classPool.get("com.wurmonline.server.players.Titles$Title");
+            CtField femaleName = ctTitle.getDeclaredField("femaleName");
+            femaleName.setModifiers(Modifier.clear(femaleName.getModifiers(), Modifier.FINAL));
+            CtField name = ctTitle.getDeclaredField("name");
+            name.setModifiers(Modifier.clear(name.getModifiers(), Modifier.FINAL));
 
-            // - Create Server tab with initial messages - //
             if (WyvernMods.enableInfoTab) {
                 CtMethod m = ctPlayers.getDeclaredMethod("sendStartGlobalKingdomChat");
                 String infoTabTitle = WyvernMods.infoTabName;
                 StringBuilder str = new StringBuilder("{ com.wurmonline.server.Message mess;");
                 for (String anInfoTabLine : WyvernMods.infoTabLines) {
-                    str.append(" mess = new com.wurmonline.server.Message(player, (byte)16, \"").append(infoTabTitle).append("\",\"").append(anInfoTabLine).append("\", 0, 255, 0);").append("        player.getCommunicator().sendMessage(mess);");
+                    str.append(" mess = new com.wurmonline.server.Message(player, (byte)16, \"")
+                            .append(infoTabTitle)
+                            .append("\",\"")
+                            .append(anInfoTabLine)
+                            .append("\", 0, 255, 0);")
+                            .append(" player.getCommunicator().sendMessage(mess);");
                 }
                 str.append("}");
                 m.insertAfter(str.toString());
             }
 
-            // - Enable bridges to be built inside/over/through houses - //
             CtClass ctPlanBridgeChecks = classPool.get("com.wurmonline.server.structures.PlanBridgeChecks");
             if (WyvernMods.ignoreBridgeChecks) {
                 Util.setReason("Disable bridge construction checks.");
@@ -391,7 +424,6 @@ public class MiscChanges {
                 Util.setBodyDeclared(thisClass, ctPlanBridgeChecks, "checkForBuildings", replace);
             }
 
-            // - Disable mailboxes from being used while loaded - //
             if (WyvernMods.disableMailboxUsageWhileLoaded) {
                 Util.setReason("Disable mailbox usage while loaded.");
                 replace = "$_ = $proceed($$);"
@@ -405,16 +437,14 @@ public class MiscChanges {
                 Util.instrumentDeclared(thisClass, ctItem, "moveToItem", "getOwnerId", replace);
             }
 
-            // - Increase the amount of checks for new legendary creature to spawn - //
             if (WyvernMods.increasedLegendaryCreatures) {
                 Util.setReason("Increase chances of a Legendary Creature spawning.");
-                replace = "for(int i = 0; i < "+ WyvernMods.increasedLegendaryFrequency +"; ++i){"
+                replace = "for(int i = 0; i < " + WyvernMods.increasedLegendaryFrequency + "; ++i){"
                         + "  $_ = $proceed($$);"
                         + "}";
                 Util.instrumentDeclared(thisClass, ctServer, "run", "checkDens", replace);
             }
 
-            // - Add Facebreyker to the list of spawnable legendary creatures - //
             CtClass ctDens = classPool.get("com.wurmonline.server.zones.Dens");
             if (WyvernMods.allowFacebreykerNaturalSpawn) {
                 Util.setReason("Add Facebreyker to the natural legendary spawn list.");
@@ -422,7 +452,6 @@ public class MiscChanges {
                 Util.insertBeforeDeclared(thisClass, ctDens, "checkDens", replace);
             }
 
-            // - Announce player titles in the Server tab - //
             if (WyvernMods.announcePlayerTitles) {
                 Util.setReason("Announce player titles in the server tab.");
                 replace = "$_ = $proceed($$);"
@@ -432,21 +461,23 @@ public class MiscChanges {
                 Util.instrumentDeclared(thisClass, ctPlayer, "addTitle", "sendNormalServerMessage", replace);
             }
 
-            /*
-            // OBSOLETE IN WURM 1.9 - The base game now natively ignores leather (Template 72)
-            // - Allow leather to improve beyond QL after being combinable - //
             if (WyvernMods.improveCombinedLeather) {
-                Util.setReason("Allow leather to improve beyond QL after being combinable.");
-                replace = "if(((com.wurmonline.server.items.Item)$0).getTemplateId() != 72){"
-                        + "  $_ = $proceed($$);"
-                        + "}else{"
-                        + "  $_ = false;"
-                        + "}";
-                Util.instrumentDescribed(thisClass, ctMethodsItems, "improveItem", descImproveItem, "isCombine", replace);
-            }
-            */
+                try {
+                    logger.info("Starting leather instrumentation...");
+                    Util.setReason("Allow combined leather to improve items regardless of source quality, like pre-1.9 leather.");
+                    
+                    // Hook into 'isCombine' of the Item directly
+                    replace = "if (" + MiscChanges.class.getName() + ".isLeatherAndImprovementAction(this)) {" +
+                              "  return false;" +
+                              "}";
+                    Util.insertBeforeDeclared(thisClass, ctItem, "isCombine", replace);
 
-            // - Check new improve materials - //
+                    logger.info("Leather instrumentation completed successfully!");
+                } catch (Exception e) {
+                    logger.log(java.util.logging.Level.SEVERE, "Failed to instrument isCombine for leather", e);
+                }
+            }
+
             if (WyvernMods.allowModdedImproveTemplates) {
                 Util.setReason("Enable modded improve templates.");
                 replace = "int temp = " + ItemMod.class.getName() + ".getModdedImproveTemplateId($1);"
@@ -456,22 +487,22 @@ public class MiscChanges {
                 Util.insertBeforeDeclared(thisClass, ctMethodsItems, "getImproveTemplateId", replace);
             }
 
-            // - Remove fatiguing actions requiring you to be on the ground - //
             if (WyvernMods.fatigueActionOverride) {
                 CtConstructor[] ctActionConstructors = ctAction.getConstructors();
                 for (CtConstructor constructor : ctActionConstructors) {
                     constructor.instrument(new ExprEditor() {
+                        @Override
                         public void edit(MethodCall m) throws CannotCompileException {
                             if (m.getMethodName().equals("isFatigue")) {
-                                m.replace("if(com.wurmonline.server.Servers.localServer.PVPSERVER){" +
-                                        "  if(!com.wurmonline.server.behaviours.Actions.isActionDestroy(this.getNumber())){" +
-                                        "    $_ = false;" +
-                                        "  }else{" +
-                                        "    $_ = $proceed($$);" +
-                                        "  }" +
-                                        "}else{" +
-                                        "  $_ = false;" +
-                                        "}");
+                                m.replace("if(com.wurmonline.server.Servers.localServer.PVPSERVER){"
+                                        + "  if(!com.wurmonline.server.behaviours.Actions.isActionDestroy(this.getNumber())){"
+                                        + "    $_ = false;"
+                                        + "  }else{"
+                                        + "    $_ = $proceed($$);"
+                                        + "  }"
+                                        + "}else{"
+                                        + "  $_ = false;"
+                                        + "}");
                                 logger.info("Set isFatigue to false in action constructor.");
                             }
                         }
@@ -491,7 +522,7 @@ public class MiscChanges {
                 Util.setReason("Disable the minimum 0.01 damage on shield damage, allowing damage modifiers to rule.");
                 CtClass ctCombatHandler = classPool.get("com.wurmonline.server.creatures.CombatHandler");
                 replace = "if($1 < 0.5f){"
-                        + "  $_ = $proceed((float) 0, (float) $2);"
+                        + "  $_ = $proceed((float)0, (float)$2);"
                         + "}else{"
                         + "  $_ = $proceed($$);"
                         + "}";
@@ -506,7 +537,6 @@ public class MiscChanges {
                 Util.insertBeforeDeclared(thisClass, ctPlayer, "mayEmote", replace);
             }
 
-            // - Make creatures wander slightly if they are shot from afar by an arrow - //
             CtClass ctArrows = classPool.get("com.wurmonline.server.combat.Arrows");
             if (WyvernMods.creatureArcheryWander) {
                 Util.setReason("Make creatures wander slightly when archered.");
@@ -550,7 +580,6 @@ public class MiscChanges {
                 });
             }
 
-            // - Increase food affinity to give 30% increased skillgain instead of 10% - //
             if (WyvernMods.higherFoodAffinities) {
                 Util.setReason("Increase food affinity to give 30% increased skillgain instead of 10%.");
                 replace = "if(com.wurmonline.server.skills.AffinitiesTimed.isTimedAffinity(this.parent.getId(), this.getNumber())) { $1 *= 1.181818d; }";
@@ -563,18 +592,48 @@ public class MiscChanges {
             String desc5 = Descriptor.ofMethod(CtClass.booleanType, params5);
             if (WyvernMods.fasterCharcoalBurn) {
                 Util.setReason("Double the rate at which charcoal piles produce items.");
-                replace = "if(this.getTemplateId() == 318){"
-                        + "  this.createDaleItems();"
-                        + "  decayed = this.setDamage(this.damage + 1.0f * this.getDamageModifier());"
-                        + "}"
-                        + "$_ = $proceed($$);";
-                Util.instrumentDescribed(thisClass, ctItem, "poll", desc5, "createDaleItems", replace);
+                ctItem.getMethod("poll", desc5).instrument(new ExprEditor() {
+                    @Override
+                    public void edit(MethodCall m) throws CannotCompileException {
+                        if (m.getMethodName().equals("createDaleItems")) {
+                            m.replace("{"
+                                    + "  if(" + MiscChanges.class.getName() + ".isCharcoalPile(this)){"
+                                    + "    $proceed($$);"
+                                    + "    this.setDamage(this.damage + 1.0f * this.getDamageModifier());"
+                                    + "  } else {"
+                                    + "    $proceed($$);"
+                                    + "  }"
+                                    + "}");
+                        }
+                    }
+                });
             }
+
+            // Fix oven/forge burning too fast - they use a formula designed for less frequent polls
+            Util.setReason("Fix oven and forge temperature decay rate to burn fuel at expected 1:1 rate.");
+            ctItem.getMethod("poll", desc5).instrument(new ExprEditor() {
+                @Override
+                public void edit(MethodCall m) throws CannotCompileException {
+                    if (m.getMethodName().equals("setTemperature")) {
+                        m.replace("{"
+                                + "  if(this.isForgeOrOven()){"
+                                + "    int currentTemp = this.getTemperature();"
+                                + "    int newTemp = $1;"
+                                + "    int loss = currentTemp - newTemp;"
+                                + "    int adjustedLoss = Math.max(1, loss / 6);"
+                                + "    $1 = (short)(currentTemp - adjustedLoss);"
+                                + "  }"
+                                + "  $proceed($$);"
+                                + "}");
+                    }
+                }
+            });
 
             Util.setReason("Allow traders to display more than 9 items of a single type.");
             CtClass ctTradeHandler = classPool.get("com.wurmonline.server.creatures.TradeHandler");
             if (WyvernMods.uncapTraderItemCount) {
                 ctTradeHandler.getDeclaredMethod("addItemsToTrade").instrument(new ExprEditor() {
+                    @Override
                     public void edit(MethodCall m) throws CannotCompileException {
                         if (m.getMethodName().equals("size") && m.getLineNumber() > 200) {
                             m.replace("$_ = 1;");
@@ -583,7 +642,6 @@ public class MiscChanges {
                 });
             }
 
-            // -- Identify players making over 10 commands per second and causing the server log message -- //
             if (WyvernMods.logExcessiveActions) {
                 Util.setReason("Log excessive actions per second.");
                 replace = "$_ = $proceed($$);"
@@ -599,10 +657,10 @@ public class MiscChanges {
                 double newPower = 2.5;
 
                 Util.setReason("Adjust skill rate to a new, dynamic rate system.");
-                replace = "double minRate = " + minRate + ";" +
-                        "double maxRate = " + maxRate + ";" +
-                        "double newPower = " + newPower + ";" +
-                        "$1 = $1*(minRate+(maxRate-minRate)*Math.pow((100-this.knowledge)*0.01, newPower));";
+                replace = "double minRate = " + minRate + ";"
+                        + "double maxRate = " + maxRate + ";"
+                        + "double newPower = " + newPower + ";"
+                        + "$1 = $1*(minRate+(maxRate-minRate)*Math.pow((100-this.knowledge)*0.01, newPower));";
                 Util.insertBeforeDescribed(thisClass, ctSkill, "alterSkill", descAlterSkill, replace);
             }
 
@@ -612,12 +670,12 @@ public class MiscChanges {
                 Util.instrumentDeclared(thisClass, ctMethodsItems, "checkLockpickBreakage", "getCurrentQualityLevel", replace);
             }
 
-            // Allow Freedom players to absorb mycelium
             CtClass ctTileBehaviour = classPool.get("com.wurmonline.server.behaviours.TileBehaviour");
             CtMethod[] ctGetBehavioursFors = ctTileBehaviour.getDeclaredMethods("getBehavioursFor");
             if (WyvernMods.allowFreedomMyceliumAbsorb) {
                 for (CtMethod method : ctGetBehavioursFors) {
                     method.instrument(new ExprEditor() {
+                        @Override
                         public void edit(MethodCall m) throws CannotCompileException {
                             if (m.getMethodName().equals("getKingdomTemplateId")) {
                                 m.replace("$_ = 3;");
@@ -635,11 +693,11 @@ public class MiscChanges {
 
             if (WyvernMods.fixVehicleSpeeds) {
                 Util.setReason("Update vehicle speeds reliably.");
-                replace = "if($1 == 8){" +
-                        "  $_ = 0;" +
-                        "}else{" +
-                        "  $_ = $proceed($$);" +
-                        "}";
+                replace = "if($1 == 8){"
+                        + "  $_ = 0;"
+                        + "}else{"
+                        + "  $_ = $proceed($$);"
+                        + "}";
                 Util.instrumentDeclared(thisClass, ctPlayer, "checkVehicleSpeeds", "nextInt", replace);
             }
 
@@ -653,22 +711,22 @@ public class MiscChanges {
             if (WyvernMods.guardTargetChanges) {
                 Util.setReason("Remove guard tower guards helping against certain types of enemies.");
                 CtClass ctGuardTower = classPool.get("com.wurmonline.server.kingdom.GuardTower");
-                replace = "if($0.isUnique() || " + Titans.class.getName() + ".isTitan($0) || " + RareSpawns.class.getName() + ".isRareCreature($0)){" +
-                        "  $_ = false;" +
-                        "}else{" +
-                        "  $_ = $proceed($$);" +
-                        "}";
+                replace = "if($0.isUnique() || " + Titans.class.getName() + ".isTitan($0) || " + RareSpawns.class.getName() + ".isRareCreature($0)){"
+                        + "  $_ = false;"
+                        + "}else{"
+                        + "  $_ = $proceed($$);"
+                        + "}";
                 Util.instrumentDeclared(thisClass, ctGuardTower, "alertGuards", "isWithinTileDistanceTo", replace);
             }
 
-            // Enable Strongwall for Libila and other spells on PvE
             CtClass ctSpellGenerator = classPool.get("com.wurmonline.server.spells.SpellGenerator");
             if (WyvernMods.enableLibilaStrongwallPvE) {
                 ctSpellGenerator.getDeclaredMethod("createSpells").instrument(new ExprEditor() {
                     @Override
                     public void edit(FieldAccess fieldAccess) throws CannotCompileException {
-                        if (Objects.equals("PVPSERVER", fieldAccess.getFieldName()))
+                        if (Objects.equals("PVPSERVER", fieldAccess.getFieldName())) {
                             fieldAccess.replace("$_ = true;");
+                        }
                     }
                 });
             }
@@ -677,11 +735,11 @@ public class MiscChanges {
 
             if (WyvernMods.royalCookNoFoodDecay) {
                 Util.setReason("Make heated food never decay if cooked by a royal cook.");
-                replace = "$_ = $proceed($$);" +
-                        "if(chefMade){" +
-                        "  $0.setName(\"royal \"+$0.getName());" +
-                        "  $0.setHasNoDecay(true);" +
-                        "}";
+                replace = "$_ = $proceed($$);"
+                        + "if(chefMade){"
+                        + "  $0.setName(\"royal \"+$0.getName());"
+                        + "  $0.setHasNoDecay(true);"
+                        + "}";
                 Util.instrumentDeclared(thisClass, ctTempStates, "checkForChange", "setName", replace);
 
                 Util.setReason("Stop royal food decay.");
@@ -689,19 +747,19 @@ public class MiscChanges {
                         ctItem, CtClass.intType, CtClass.booleanType, CtClass.booleanType, CtClass.booleanType, CtClass.booleanType, CtClass.booleanType
                 };
                 String desc11 = Descriptor.ofMethod(CtClass.booleanType, params11);
-                replace = "if($0.isFood() && $0.hasNoDecay()){" +
-                        "  $_ = false;" +
-                        "}else{" +
-                        "  $_ = $proceed($$);" +
-                        "}";
+                replace = "if($0.isFood() && $0.hasNoDecay()){"
+                        + "  $_ = false;"
+                        + "}else{"
+                        + "  $_ = $proceed($$);"
+                        + "}";
                 Util.instrumentDescribed(thisClass, ctItem, "poll", desc11, "setDamage", replace);
             }
 
             if (WyvernMods.mayorsCommandAbandonedVehicles) {
                 Util.setReason("Allow mayors to command abandoned vehicles off their deed.");
-                replace = "if(" + MiscChanges.class.getName() + ".checkMayorCommand($0, $1)){" +
-                        "  return true;" +
-                        "}";
+                replace = "if(" + MiscChanges.class.getName() + ".checkMayorCommand($0, $1)){"
+                        + "  return true;"
+                        + "}";
                 Util.insertBeforeDeclared(thisClass, ctItem, "mayCommand", replace);
             }
 
@@ -715,34 +773,37 @@ public class MiscChanges {
 
             if (WyvernMods.disableFoodFirstBiteBonus) {
                 Util.setReason("Food affinity timer normalization.");
-                replace = "long time = " + WurmCalendar.class.getName() + ".getCurrentTime();" +
-                        "if($0.getExpires($1) == null){" +
-                        "  $_ = Long.valueOf(time);" +
-                        "}else{" +
-                        "  $_ = $proceed($$);" +
-                        "}";
+                replace = "long time = " + WurmCalendar.class.getName() + ".getCurrentTime();"
+                        + "if($0.getExpires($1) == null){"
+                        + "  $_ = Long.valueOf(time);"
+                        + "}else{"
+                        + "  $_ = $proceed($$);"
+                        + "}";
                 Util.instrumentDeclared(thisClass, ctAffinitiesTimed, "add", "getExpires", replace);
             }
 
             if (WyvernMods.bedQualitySleepBonus) {
                 Util.setReason("Make bed QL affect sleep bonus timer.");
                 CtClass ctPlayerInfo = classPool.get("com.wurmonline.server.players.PlayerInfo");
-                replace = "secs = " + MiscChanges.class.getName() + ".getBedBonus(secs, this.bed);" +
-                        "$_ = $proceed($$);";
-                Util.instrumentDeclared(thisClass, ctPlayerInfo, "calculateSleep", "setSleep", replace);
+                ctPlayerInfo.getDeclaredMethod("calculateSleep").instrument(new ExprEditor() {
+                    @Override
+                    public void edit(MethodCall m) throws CannotCompileException {
+                        if (m.getMethodName().equals("setSleep")) {
+                            m.replace("{"
+                                    + "  $1 = " + MiscChanges.class.getName() + ".getBedBonus($1, this.bed);"
+                                    + "  $proceed($$);"
+                                    + "}");
+                        }
+                    }
+                });
             }
 
             if (WyvernMods.fixMountedBodyStrength) {
                 ctCreature.getMethod("getTraitMovePercent", "(Z)F").instrument(new ExprEditor() {
-                    private boolean first = true;
                     @Override
                     public void edit(MethodCall m) throws CannotCompileException {
                         if (m.getMethodName().equals("getStrengthSkill")) {
-                            if (first)
-                                m.replace("wmod = wmod * 3D; $_ = $proceed() * (this.isUnicorn()?3D:2D);");
-                            else
-                                m.replace("$_ = $proceed() * (this.isUnicorn()?3D:2D);");
-                            first = false;
+                            m.replace("$_ = $proceed() * (this.isUnicorn()?3D:2D);");
                         }
                     }
                 });
@@ -754,43 +815,48 @@ public class MiscChanges {
                         ctAction, ctCreature, ctItem, CtClass.floatType
                 };
                 String desc12 = Descriptor.ofMethod(CtClass.booleanType, params12);
-                replace = "$_ = $proceed($1, $2, $3, $4, " + MiscChanges.class.getName() + ".getNewFoodFill(qlevel));";
-                Util.instrumentDescribed(thisClass, ctMethodsItems, "eat", desc12, "modifyHunger", replace);
+                ctMethodsItems.getMethod("eat", desc12).instrument(new ExprEditor() {
+                    @Override
+                    public void edit(MethodCall m) throws CannotCompileException {
+                        if (m.getMethodName().equals("modifyHunger")) {
+                            m.replace("{"
+                                    + "  $proceed($1, $2, $3, (float)" + MiscChanges.class.getName() + ".getNewFoodFill((float)$2.getCurrentQualityLevel()), $5);"
+                                    + "}");
+                        }
+                    }
+                });
             }
 
             if (WyvernMods.rarityWindowBadLuckProtection) {
                 Util.setReason("Bad luck protection on rarity windows.");
-                replace = "if($1 == 3600){" +
-                        "  $_ = " + MiscChanges.class.getName() + ".getRarityWindowChance(this.getWurmId());" +
-                        "}else{" +
-                        "  $_ = $proceed($$);" +
-                        "}";
+                replace = "if($1 == 3600){"
+                        + "  $_ = " + MiscChanges.class.getName() + ".getRarityWindowChance(this.getWurmId());"
+                        + "}else{"
+                        + "  $_ = $proceed($$);"
+                        + "}";
                 Util.instrumentDeclared(thisClass, ctPlayer, "poll", "nextInt", replace);
             }
 
             CtClass ctSimpleCreationEntry = classPool.get("com.wurmonline.server.items.SimpleCreationEntry");
-
             if (WyvernMods.rareCreationAdjustments) {
                 ctSimpleCreationEntry.getDeclaredMethod("run").instrument(new ExprEditor() {
                     private boolean first = true;
+
                     @Override
                     public void edit(MethodCall m) throws CannotCompileException {
-                        if (m.getMethodName().equals("getRarity")) {
-                            if (first) {
-                                m.replace("byte newRarity = " + MiscChanges.class.getName() + ".getNewCreationRarity(this, source, target, template);" +
-                                        "if(newRarity > 0){" +
-                                        "  act.setRarity(newRarity);" +
-                                        "}" +
-                                        "$_ = $proceed($$);");
-                                first = false;
-                            }
+                        if (m.getMethodName().equals("getRarity") && first) {
+                            m.replace("byte newRarity = " + MiscChanges.class.getName() + ".getNewCreationRarity(this, source, target, template);"
+                                    + "if(newRarity > 0){"
+                                    + "  act.setRarity(newRarity);"
+                                    + "}"
+                                    + "$_ = $proceed($$);");
+                            first = false;
                         }
                     }
                 });
             }
 
             CtClass ctAbilities = classPool.get("com.wurmonline.server.players.Abilities");
-
             if (WyvernMods.tomeUsageAnyAltar) {
                 Util.setReason("Make it so sorceries can be used anywhere with a flat 3x3 altar.");
                 replace = "$_ = 1;";
@@ -799,10 +865,10 @@ public class MiscChanges {
 
             if (WyvernMods.keyOfHeavensLoginOnly) {
                 Util.setReason("Make the key of the heavens only usable on PvE");
-                replace = "if($1.getTemplateId() == 794 && com.wurmonline.server.Servers.localServer.PVPSERVER){" +
-                        "  $2.getCommunicator().sendNormalServerMessage(\"The \"+$1.getName()+\" must be used on the login server.\");" +
-                        "  return false;" +
-                        "}";
+                replace = "if($1.getTemplateId() == 794 && com.wurmonline.server.Servers.localServer.PVPSERVER){"
+                        + "  $2.getCommunicator().sendNormalServerMessage(\"The \"+$1.getName()+\" must be used on the login server.\");"
+                        + "  return false;"
+                        + "}";
                 Util.insertBeforeDeclared(thisClass, ctAbilities, "isInProperLocation", replace);
             }
 
@@ -812,26 +878,36 @@ public class MiscChanges {
                         ctAction, ctCreature, ctItem, CtClass.floatType
                 };
                 String desc13 = Descriptor.ofMethod(CtClass.booleanType, params13);
-                replace = "if(template != 128){" +
-                        "  $_ = $proceed($1, $2, $3*5);" +
-                        "}else{" +
-                        "  $_ = $proceed($$);" +
-                        "}";
-                Util.instrumentDescribed(thisClass, ctMethodsItems, "drink", desc13, "sendActionControl", replace);
-                replace = "if(template != 128){" +
-                        "  $_ = $proceed($1/5, $2, $3, $4, $5);" +
-                        "}else{" +
-                        "  $_ = $proceed($$);" +
-                        "}";
-                Util.instrumentDescribed(thisClass, ctMethodsItems, "drink", desc13, "modifyThirst", replace);
+                ctMethodsItems.getMethod("drink", desc13).instrument(new ExprEditor() {
+                    @Override
+                    public void edit(MethodCall m) throws CannotCompileException {
+                        if (m.getMethodName().equals("sendActionControl")) {
+                            m.replace("{"
+                                    + "  if(drink.getTemplateId() != 128){"
+                                    + "    $proceed($1, $2, $3*5);"
+                                    + "  }else{"
+                                    + "    $proceed($$);"
+                                    + "  }"
+                                    + "}");
+                        } else if (m.getMethodName().equals("modifyThirst")) {
+                            m.replace("{"
+                                    + "  if(drink.getTemplateId() != 128){"
+                                    + "    $_ = $proceed($1/5.0F, $2, $3, $4, $5);"
+                                    + "  }else{"
+                                    + "    $_ = $proceed($$);"
+                                    + "  }"
+                                    + "}");
+                        }
+                    }
+                });
             }
 
             if (WyvernMods.disableHelpGMCommands) {
                 Util.setReason("Disable GM commands from displaying in /help unless the player is a GM.");
                 CtClass ctServerTweaksHandler = classPool.get("com.wurmonline.server.ServerTweaksHandler");
-                replace = "if($1.getPower() < 1){" +
-                        "  return;" +
-                        "}";
+                replace = "if($1.getPower() < 1){"
+                        + "  return;"
+                        + "}";
                 Util.insertBeforeDeclared(thisClass, ctServerTweaksHandler, "sendHelp", replace);
             }
 
@@ -844,9 +920,9 @@ public class MiscChanges {
             if (WyvernMods.fixMissionNullPointerException) {
                 Util.setReason("Fix mission null pointer exception.");
                 CtClass ctEpicServerStatus = classPool.get("com.wurmonline.server.epic.EpicServerStatus");
-                replace = "if(itemplates.size() < 1){" +
-                        "  com.wurmonline.server.epic.EpicServerStatus.setupMissionItemTemplates();" +
-                        "}";
+                replace = "if(itemplates.size() < 1){"
+                        + "  com.wurmonline.server.epic.EpicServerStatus.setupMissionItemTemplates();"
+                        + "}";
                 Util.insertBeforeDeclared(thisClass, ctEpicServerStatus, "getRandomItemTemplateUsed", replace);
             }
 
@@ -857,10 +933,10 @@ public class MiscChanges {
                         ctAction, ctCreature, ctItem, ctItem, CtClass.shortType, CtClass.floatType
                 };
                 String desc14 = Descriptor.ofMethod(CtClass.booleanType, params14);
-                replace = "if($5 == 519){" +
-                        "  $2.getCommunicator().sendNormalServerMessage(\"Smelting is disabled.\");" +
-                        "  return true;" +
-                        "}";
+                replace = "if($5 == 519){"
+                        + "  $2.getCommunicator().sendNormalServerMessage(\"Smelting is disabled.\");"
+                        + "  return true;"
+                        + "}";
                 Util.insertBeforeDescribed(thisClass, ctItemBehaviour, "action", desc14, replace);
             }
 
@@ -882,18 +958,32 @@ public class MiscChanges {
                 Util.instrumentDescribed(thisClass, ctCommunicator, "sendAddStatusEffect", desc16, "isSendToBuffBar", replace);
             }
 
-            // 1.9 Achievement fix
             if (WyvernMods.sqlAchievementFix) {
                 classPool.getCtClass("com.wurmonline.server.players.Achievements").getMethod("loadAllAchievements", "()V")
                         .instrument(new ExprEditor() {
                             @Override
                             public void edit(MethodCall m) throws CannotCompileException {
-                                if (m.getMethodName().equals("getTimestamp"))
-                                    m.replace("$_=com.wurmonline.server.utils.DbUtilities.getTimestampOrNull(rs.getString($1)); " +
-                                            "if ($_==null) $_=new java.sql.Timestamp(java.lang.System.currentTimeMillis());");
+                                if (m.getMethodName().equals("getTimestamp")) {
+                                    m.replace("$_=com.wurmonline.server.utils.DbUtilities.getTimestampOrNull(rs.getString($1));"
+                                            + "if($_==null) $_=new java.sql.Timestamp(java.lang.System.currentTimeMillis());");
+                                }
                             }
                         });
             }
+
+            // Fix for ArrayIndexOutOfBoundsException when disembarking in caves
+            Util.setReason("Prevent crash when disembarking vehicle in cave with invalid coordinates.");
+            // Find the setVehicle method with the right signature
+            CtClass[] setVehicleParams = {CtClass.longType, CtClass.booleanType, CtClass.byteType, CtClass.intType, CtClass.intType};
+            String setVehicleDesc = Descriptor.ofMethod(CtClass.voidType, setVehicleParams);
+            ctCreature.getMethod("setVehicle", setVehicleDesc).insertBefore(
+                    "if ($4 < 0 || $5 < 0) {"
+                    + "  $4 = (int)(this.getPosX() / 4.0F);"
+                    + "  $5 = (int)(this.getPosY() / 4.0F);"
+                    + "  $4 = Math.max(0, Math.min((1 << 11) - 1, $4));"
+                    + "  $5 = Math.max(0, Math.min((1 << 11) - 1, $5));"
+                    + "}"
+            );
 
         } catch (CannotCompileException | NotFoundException | IllegalArgumentException | ClassCastException e) {
             throw new HookException(e);

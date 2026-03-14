@@ -11,6 +11,7 @@ import org.gotti.wurmunlimited.modsupport.creatures.ModCreature;
 
 public class Reaper implements ModCreature, CreatureTypes {
 	public static int templateId;
+
 	@Override
 	public CreatureTemplateBuilder createCreateTemplateBuilder() {
 		int[] types = {
@@ -20,7 +21,6 @@ public class Reaper implements ModCreature, CreatureTypes {
 				CreatureTypes.C_TYPE_HUNTING,
 				CreatureTypes.C_TYPE_MONSTER,
 				CreatureTypes.C_TYPE_CARNIVORE,
-				//CreatureTypes.C_TYPE_FENCEBREAKER,
 				CreatureTypes.C_TYPE_NON_NEWBIE,
 				CreatureTypes.C_TYPE_NO_REBIRTH,
 				CreatureTypes.C_TYPE_REGENERATING
@@ -55,6 +55,7 @@ public class Reaper implements ModCreature, CreatureTypes {
 		templateId = builder.getTemplateId();
 		return builder;
 	}
+
 	@Override
 	public void addEncounters() {
 	}

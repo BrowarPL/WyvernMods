@@ -10,9 +10,12 @@ import com.wurmonline.server.creatures.SpellEffectsEnum;
 import com.wurmonline.server.players.Cultist;
 import com.wurmonline.server.players.Cults;
 import com.wurmonline.server.players.Player;
+import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
+import javassist.expr.ExprEditor;
+import javassist.expr.MethodCall;
 import mod.sin.lib.Util;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.gotti.wurmunlimited.modloader.classhooks.HookException;
@@ -204,15 +207,20 @@ public class MeditationPerks {
                 Util.instrumentDeclared(thisClass, ctCreatureStatus, "modifyStamina", "usesNoStamina", replace);
             }
 
-            /*
-            // INACCESSIBLE IN WURM 1.9 - Missing debug symbols for 'staminaMod' and 'player' local variables.
             if (WyvernMods.scalingKnowledgeSkillGain) {
                 Util.setReason("Scale path of knowledge skill gain from level 7 onwards.");
-                replace = "staminaMod *= " + MeditationPerks.class.getName() + ".getKnowledgeSkillGain(player);" +
-                        "$_ = false;";
-                Util.instrumentDeclared(thisClass, ctSkill, "alterSkill", "levelElevenSkillgain", replace);
+                ctSkill.getDeclaredMethod("alterSkill").instrument(new ExprEditor() {
+                    @Override
+                    public void edit(MethodCall mc) throws CannotCompileException {
+                        if (mc.getMethodName().equals("levelElevenSkillgain")) {
+                            mc.replace("{ " +
+                                    "$1 *= " + MeditationPerks.class.getName() + ".getKnowledgeSkillGain(this.parent); " +
+                                    "$_ = $proceed($$); " +
+                                    "}");
+                        }
+                    }
+                });
             }
-            */
 
             if (WyvernMods.removeMeditationTickTimer) {
                 Util.setReason("Remove artifical tick timer for meditation.");
@@ -261,7 +269,9 @@ public class MeditationPerks {
                 replace = "return this.path == 3 && this.level > 6 && System.currentTimeMillis() - this.cooldown2 > " + WyvernMods.knowledgeInfoTileCooldown + ";";
                 Util.setBodyDeclared(thisClass, ctCultist, "mayInfoLocal", replace);
             }
-        } catch ( NotFoundException | IllegalArgumentException | ClassCastException e) {
+        } catch (NotFoundException | IllegalArgumentException | ClassCastException e) {
+            throw new HookException(e);
+        } catch (CannotCompileException e) {
             throw new HookException(e);
         }
     }

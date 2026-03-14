@@ -12,7 +12,6 @@ import com.wurmonline.server.creatures.CreatureTemplateIds;
 import com.wurmonline.server.creatures.NoSuchCreatureTemplateException;
 
 public class SolDemon implements ModCreature {
-
 	private int templateId;
 
 	@Override
@@ -29,6 +28,7 @@ public class SolDemon implements ModCreature {
 			}
 		};
 	}
+
 	@Override
 	public void addEncounters() {
 		if (templateId == 0)

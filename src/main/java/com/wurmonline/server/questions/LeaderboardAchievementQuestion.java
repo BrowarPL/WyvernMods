@@ -28,7 +28,7 @@ public class LeaderboardAchievementQuestion extends Question {
 
     @Override
     public void answer(Properties answer) {
-        boolean accepted = answer.containsKey("okay") && answer.get("okay") == "true";
+        boolean accepted = answer.containsKey("okay") && "true".equals(answer.get("okay"));
         if (accepted) {
             LeaderboardQuestion lbq = new LeaderboardQuestion(this.getResponder(), "Leaderboard", "Which leaderboard would you like to view?", this.getResponder().getWurmId());
             lbq.sendQuestion();
@@ -66,10 +66,8 @@ public class LeaderboardAchievementQuestion extends Question {
         f.addHidden("id", String.valueOf(this.id));
         ArrayList<String> names = new ArrayList<>();
         ArrayList<Integer> counts = new ArrayList<>();
-        //ArrayList<Integer> deities = new ArrayList<>();
         String name;
         int counter;
-        //int deity;
         String extra = "";
 
         // Populates HashMap with latest opt-in data.
@@ -80,16 +78,13 @@ public class LeaderboardAchievementQuestion extends Question {
         ResultSet rs = null;
         try {
             dbcon = DbConnector.getPlayerDbCon();
-            //ps = dbcon.prepareStatement("SELECT players.name, skills.value, players.deity FROM skills JOIN players ON skills.owner = players.wurmid WHERE skills.number = " + skillNum + " AND (players.power = 0) ORDER BY skills.value DESC LIMIT 20");
             ps = dbcon.prepareStatement("SELECT players.name, achievements.counter FROM achievements JOIN players ON achievements.player = players.wurmid WHERE achievements.achievement = " + achievementNum + " AND achievements.counter > 0 AND players.power = 0 ORDER BY achievements.counter DESC LIMIT 20");
             rs = ps.executeQuery();
             while(rs.next()){
                 name = rs.getString(1);
                 counter = rs.getInt(2);
-                //deity = rs.getInt(3);
                 names.add(name);
                 counts.add(counter);
-                //deities.add(deity);
             }
         }
         catch (SQLException e) {
@@ -102,7 +97,6 @@ public class LeaderboardAchievementQuestion extends Question {
         f.addBoldText("Top 20 players with achievement "+this.getQuestion());
         f.addBoldText(template.getRequirement());
         f.addText("\n\n");
-        //DecimalFormat df = new DecimalFormat(".000");
         for(int i = 0; i < names.size() && i < counts.size(); ++i) {
             name = names.get(i);
             if(!optIn.containsKey(name)){

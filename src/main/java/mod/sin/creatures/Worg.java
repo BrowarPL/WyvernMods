@@ -56,6 +56,7 @@ public class Worg implements ModCreature {
 			}
 		};
 	}
+
 	@Override
 	public void addEncounters() {
 		if (templateId == 0)

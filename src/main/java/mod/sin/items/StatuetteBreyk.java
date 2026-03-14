@@ -1,6 +1,7 @@
 package mod.sin.items;
 
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.gotti.wurmunlimited.modsupport.ItemTemplateBuilder;
@@ -17,51 +18,60 @@ import com.wurmonline.server.skills.SkillList;
 public class StatuetteBreyk {
 	public static final Logger logger = Logger.getLogger(StatuetteBreyk.class.getName());
 	public static int templateId;
-	private static final String name = "statuette of Thelastdab";
+	private static final String NAME = "statuette of Thelastdab";
 	public void createTemplate() throws IOException{
-		ItemTemplateBuilder itemBuilder = new ItemTemplateBuilder("mod.item.statuette.breyk");
-		itemBuilder.name(name, "statuettes", "A statuette resembling the artists interpretation of the demigod Thelastdab.");
-		itemBuilder.itemTypes(new short[]{ // {108, 52, 22, 44, 87, 92, 147} - Statuette
-				ItemTypes.ITEM_TYPE_NAMED,
-				ItemTypes.ITEM_TYPE_DECORATION,
-				ItemTypes.ITEM_TYPE_METAL,
-				ItemTypes.ITEM_TYPE_REPAIRABLE,
-				ItemTypes.ITEM_TYPE_MATERIAL_PRICEEFFECT,
-				ItemTypes.ITEM_TYPE_COLORABLE,
-				ItemTypes.ITEM_TYPE_MISSION
-		});
-		itemBuilder.imageNumber((short) 282);
-		itemBuilder.behaviourType((short) 35);
-		itemBuilder.combatDamage(40);
-		itemBuilder.decayTime(Long.MAX_VALUE);
-		itemBuilder.dimensions(3, 5, 20);
-		itemBuilder.primarySkill(-10);
-		itemBuilder.bodySpaces(MiscConstants.EMPTY_BYTE_PRIMITIVE_ARRAY);
-		itemBuilder.modelName("model.decoration.statuette.magranon.");
-		itemBuilder.difficulty(40.0f);
-		itemBuilder.weightGrams(1000);
-		itemBuilder.material(Materials.MATERIAL_SILVER);
-		itemBuilder.value(20000);
-		itemBuilder.isTraded(true);
+		try {
+			ItemTemplateBuilder itemBuilder = new ItemTemplateBuilder("mod.item.statuette.breyk");
+			itemBuilder.name(NAME, "statuettes", "A statuette resembling the artists interpretation of the demigod Thelastdab.");
+			itemBuilder.itemTypes(new short[]{
+					ItemTypes.ITEM_TYPE_NAMED,
+					ItemTypes.ITEM_TYPE_DECORATION,
+					ItemTypes.ITEM_TYPE_METAL,
+					ItemTypes.ITEM_TYPE_REPAIRABLE,
+					ItemTypes.ITEM_TYPE_MATERIAL_PRICEEFFECT,
+					ItemTypes.ITEM_TYPE_COLORABLE,
+					ItemTypes.ITEM_TYPE_MISSION
+			});
+			itemBuilder.imageNumber((short) 282);
+			itemBuilder.behaviourType((short) 35);
+			itemBuilder.combatDamage(40);
+			itemBuilder.decayTime(Long.MAX_VALUE);
+			itemBuilder.dimensions(3, 5, 20);
+			itemBuilder.primarySkill(-10);
+			itemBuilder.bodySpaces(MiscConstants.EMPTY_BYTE_PRIMITIVE_ARRAY);
+			itemBuilder.modelName("model.decoration.statuette.magranon.");
+			itemBuilder.difficulty(40.0f);
+			itemBuilder.weightGrams(1000);
+			itemBuilder.material(Materials.MATERIAL_SILVER);
+			itemBuilder.value(20000);
+			itemBuilder.isTraded(true);
 
-		ItemTemplate template = itemBuilder.build();
-		templateId = template.getTemplateId();
-		logger.info(name+" TemplateID: "+templateId);
+			ItemTemplate template = itemBuilder.build();
+			if (template != null) {
+				templateId = template.getTemplateId();
+				logger.info(NAME+" TemplateID: "+templateId);
+			} else {
+				logger.log(Level.SEVERE, "Failed to create item template for "+NAME);
+			}
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Error creating item template for "+NAME, e);
+			throw e;
+		}
 	}
 	public void initCreationEntry(){
 		logger.info("initCreationEntry()");
 		if(templateId > 0){
-			logger.info("Creating "+name+" creation entry, ID = "+templateId);
-			CreationEntryCreator.createSimpleEntry(SkillList.SMITHING_GOLDSMITHING, ItemList.anvilSmall, ItemList.silverBar,
-					templateId, false, true, 0.0f, false, false, CreationCategories.STATUETTES);
-			CreationEntryCreator.createSimpleEntry(SkillList.SMITHING_GOLDSMITHING, ItemList.anvilSmall, ItemList.goldBar,
-					templateId, false, true, 0.0f, false, false, CreationCategories.STATUETTES);
-			//final AdvancedCreationEntry entry = CreationEntryCreator.createAdvancedEntry(SkillList.SMITHING_WEAPON_HEADS,
-			//		ItemList.ironBand, ItemList.shaft, templateId, false, false, 0f, true, false, CreationCategories.TOOLS);
-			//entry.addRequirement(new CreationRequirement(1, ItemList.woodenHandleSword, 2, true));
-			//entry.addRequirement(new CreationRequirement(2, ItemList.nailsIronSmall, 1, true));
+			try {
+				logger.info("Creating "+NAME+" creation entry, ID = "+templateId);
+				CreationEntryCreator.createSimpleEntry(SkillList.SMITHING_GOLDSMITHING, ItemList.anvilSmall, ItemList.silverBar,
+						templateId, false, true, 0.0f, false, false, CreationCategories.STATUETTES);
+				CreationEntryCreator.createSimpleEntry(SkillList.SMITHING_GOLDSMITHING, ItemList.anvilSmall, ItemList.goldBar,
+						templateId, false, true, 0.0f, false, false, CreationCategories.STATUETTES);
+			} catch (Exception e) {
+				logger.log(Level.SEVERE, "Error creating creation entry for "+NAME, e);
+			}
 		}else{
-			logger.info(name+" does not have a template ID on creation entry.");
+			logger.log(Level.WARNING, NAME+" does not have a template ID on creation entry.");
 		}
 	}
 }

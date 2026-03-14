@@ -38,7 +38,7 @@ public class ArrowPackUnpackAction implements ModAction {
 			actionId,
 			"Unpack arrows",
 			"unpacking",
-			new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
+			new int[] { 6 }
 		);
 		ModActions.registerAction(actionEntry);
 	}
@@ -103,9 +103,12 @@ public class ArrowPackUnpackAction implements ModAction {
 							HashMap<Byte, Float> spellEffects = new HashMap<>();
 							ItemSpellEffects effs = target.getSpellEffects();
 							if(effs != null){
-								for(SpellEffect eff : effs.getEffects()){
-									if(eff.getPower() > 0){
-										spellEffects.put(eff.type, eff.getPower());
+								SpellEffect[] effects = effs.getEffects();
+								if(effects != null){
+									for(SpellEffect eff : effects){
+										if(eff.getPower() > 0){
+											spellEffects.put(eff.type, eff.getPower());
+										}
 									}
 								}
 							}

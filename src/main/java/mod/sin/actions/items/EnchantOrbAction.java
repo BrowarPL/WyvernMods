@@ -41,7 +41,6 @@ public class EnchantOrbAction implements ModAction {
 			"Transfer enchant",
 			"transferring",
 			new int[0]
-			//new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
 		);
 		ModActions.registerAction(actionEntry);
 	}
@@ -83,18 +82,20 @@ public class EnchantOrbAction implements ModAction {
 						return true;
 					}
 					ItemSpellEffects effs = source.getSpellEffects();
-					if(effs == null || effs.getEffects().length == 0){
+					if(effs == null){
 						player.getCommunicator().sendNormalServerMessage("The "+source.getTemplate().getName()+" has no enchants.");
 						return true;
 					}
-					/*if(!Spell.mayBeEnchanted(target)){
-						player.getCommunicator().sendNormalServerMessage("The "+target.getTemplate().getName()+" may not be enchanted.");
-					}*/
+					SpellEffect[] sourceEffects = effs.getEffects();
+					if(sourceEffects == null || sourceEffects.length == 0){
+						player.getCommunicator().sendNormalServerMessage("The "+source.getTemplate().getName()+" has no enchants.");
+						return true;
+					}
 					ItemSpellEffects teffs = target.getSpellEffects();
 					if(teffs == null){
 						teffs = new ItemSpellEffects(target.getWurmId());
 					}
-					for(SpellEffect eff : effs.getEffects()){
+					for(SpellEffect eff : sourceEffects){
 						Spell spell = Spells.getEnchantment(eff.type);
 						boolean canEnchant = false;// = Spell.mayBeEnchanted(target);
 						byte type = eff.type;
@@ -159,7 +160,8 @@ public class EnchantOrbAction implements ModAction {
 							player.getCommunicator().sendSafeServerMessage("The "+eff.getName()+" transfers to the "+target.getTemplate().getName()+".");
 						}
 					}
-					if(effs.getEffects().length == 0){
+					SpellEffect[] finalEffects = effs.getEffects();
+					if(finalEffects == null || finalEffects.length == 0){
 						player.getCommunicator().sendSafeServerMessage("The "+source.getTemplate().getName()+" exhausts the last of its magic and vanishes.");
 						Items.destroyItem(source.getWurmId());
 					}

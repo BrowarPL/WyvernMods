@@ -33,7 +33,7 @@ public class ArenaCacheOpenAction implements ModAction {
 			actionId,
 			"Open cache",
 			"opening",
-			new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
+			new int[] { 6 }
 		);
 		ModActions.registerAction(actionEntry);
 	}
@@ -90,9 +90,6 @@ public class ArenaCacheOpenAction implements ModAction {
 							performer.getCommunicator().sendNormalServerMessage("You open your "+target.getName()+".");
 							Server.getInstance().broadCastAction(performer.getName() + " opens "+performer.getHisHerItsString()+" "+target.getName()+".", performer, 5);
 							logger.info("Player "+performer.getName()+" opened arena cache.");
-							// Sorcery fragment.
-							/*Item sorceryFragment = ItemFactory.createItem(SorceryFragment.templateId, 90f, null);
-							performer.getInventory().insertItem(sorceryFragment, true);*/
 							SupplyDepots.giveCacheReward(performer);
 							Items.destroyItem(target.getWurmId());
 							return true;

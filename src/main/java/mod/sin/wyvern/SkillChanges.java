@@ -1,7 +1,11 @@
 package mod.sin.wyvern;
 
 import com.wurmonline.server.Server;
-import com.wurmonline.server.skills.*;
+import com.wurmonline.server.skills.Skill;
+import com.wurmonline.server.skills.SkillList;
+import com.wurmonline.server.skills.SkillSystem;
+import com.wurmonline.server.skills.SkillTemplate;
+import com.wurmonline.server.skills.Skills;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
@@ -10,12 +14,14 @@ import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.gotti.wurmunlimited.modloader.classhooks.HookException;
 import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
 
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SkillChanges {
     public static final Logger logger = Logger.getLogger(SkillChanges.class.getName());
 
+    @SuppressWarnings("unused")
     public static double newDoSkillGainNew(Skill skill, double check, double power, double learnMod, float times, double skillDivider) {
         double bonus = 1.0;
         double diff = Math.abs(check - skill.getKnowledge());
@@ -24,25 +30,26 @@ public class SkillChanges {
         if (diff <= 15.0 && awardBonus) {
             bonus = 1.0 + (0.1 * (diff / 15.0));
         }
-        /*if (power < 0.0) {
-            if (this.knowledge < 20.0) {
-                this.alterSkill((100.0 - this.knowledge) / (this.getDifficulty(this.parent.priest) * this.knowledge * this.knowledge) * learnMod * bonus, false, times, true, skillDivider);
-            }
-        } else {
-            this.alterSkill((100.0 - this.knowledge) / (this.getDifficulty(this.parent.priest) * this.knowledge * this.knowledge) * learnMod * bonus, false, times, true, skillDivider);
-        }*/
+
         try {
             Skills parent = ReflectionUtil.getPrivateField(skill, ReflectionUtil.getField(skill.getClass(), "parent"));
-            double advanceMultiplicator = (100.0 - skill.getKnowledge()) / (skill.getDifficulty(parent.priest) * skill.getKnowledge() * skill.getKnowledge()) * learnMod * bonus;
+            double advanceMultiplicator = (100.0 - skill.getKnowledge()) /
+                    (skill.getDifficulty(parent.priest) * skill.getKnowledge() * skill.getKnowledge()) *
+                    learnMod * bonus;
+
             double negativeDecayRate = WyvernMods.hybridNegativeDecayRate;
             double positiveDecayRate = WyvernMods.hybridPositiveDecayRate;
             double valueAtZero = WyvernMods.hybridValueAtZero;
             double valueAtOneHundred = WyvernMods.hybridValueAtOneHundred;
-            //advanceMultiplicator *= Math.pow(2, ((2-Math.pow((100/(100+power)), p))*(100-power)/100));
-            //double mult = Math.pow(2, (2-Math.pow(100/(100+power), negativeDecayRate))*Math.pow((100-power)*0.01, positiveDecayRate));
-            double mult = valueAtOneHundred*Math.pow(valueAtZero/valueAtOneHundred, (2-Math.pow(100/(100+Math.max(-99,power)), negativeDecayRate))*Math.pow((100-power)*0.01, positiveDecayRate));
+
+            double mult = valueAtOneHundred * Math.pow(
+                    valueAtZero / valueAtOneHundred,
+                    (2 - Math.pow(100 / (100 + Math.max(-99, power)), negativeDecayRate)) *
+                            Math.pow((100 - power) * 0.01, positiveDecayRate)
+            );
+
             if(mult < 0.5 && skill.getKnowledge() < 20){
-                advanceMultiplicator *= 0.5+(Server.rand.nextDouble()*0.5);
+                advanceMultiplicator *= 0.5 + (Server.rand.nextDouble() * 0.5);
             }else if(skill.getNumber() == SkillList.MEDITATING || skill.getNumber() == SkillList.LOCKPICKING){
                 advanceMultiplicator *= Math.max(mult, 0.8d);
             }else if(mult > 0.0001) {
@@ -50,59 +57,81 @@ public class SkillChanges {
             }else{
                 advanceMultiplicator = 0;
             }
-            /*if(skill.getType() > 3) {
-                logger.info(String.format("Power of %.2f on skill %s gives multiplier of %.2f.", power, skill.getName(), mult));
-            }*/
+
             return advanceMultiplicator;
-            //ReflectionUtil.callPrivateMethod(skill, ReflectionUtil.getMethod(skill.getClass(), "alterSkill"), advanceMultiplicator, false, times, true, skillDivider);
         } catch (IllegalAccessException | NoSuchFieldException e) {
             logger.log(Level.WARNING, "", e);
         }
         return 0;
     }
-    public static void setSkillName(int id, String newName){
+
+    private static SkillTemplate getSkillTemplateSafe(int id) {
         SkillTemplate skillTemplate = SkillSystem.templates.get(id);
+        if (skillTemplate == null) {
+            logger.warning("Could not find skill template for ID " + id + ".");
+        }
+        return skillTemplate;
+    }
+
+    public static void setSkillName(int id, String newName){
+        SkillTemplate skillTemplate = getSkillTemplateSafe(id);
+        if (skillTemplate == null) {
+            return;
+        }
         try {
             ReflectionUtil.setPrivateField(skillTemplate, ReflectionUtil.getField(skillTemplate.getClass(), "name"), newName);
             SkillSystem.skillNames.put(skillTemplate.getNumber(), newName);
             SkillSystem.namesToSkill.put(newName, skillTemplate.getNumber());
         } catch (IllegalAccessException | NoSuchFieldException e) {
-            logger.log(Level.WARNING, "Failed to rename skill with ID "+id+"!", e);
+            logger.log(Level.WARNING, "Failed to rename skill with ID " + id + "!", e);
         }
     }
+
     public static void setSkillDifficulty(int id, float difficulty){
-        SkillTemplate skillTemplate = SkillSystem.templates.get(id);
+        SkillTemplate skillTemplate = getSkillTemplateSafe(id);
+        if (skillTemplate == null) {
+            return;
+        }
         skillTemplate.setDifficulty(difficulty);
     }
+
     public static void setSkillTickTime(int id, long tickTime){
-        SkillTemplate skillTemplate = SkillSystem.templates.get(id);
+        SkillTemplate skillTemplate = getSkillTemplateSafe(id);
+        if (skillTemplate == null) {
+            return;
+        }
         try {
             ReflectionUtil.setPrivateField(skillTemplate, ReflectionUtil.getField(skillTemplate.getClass(), "tickTime"), tickTime);
         } catch (IllegalAccessException | NoSuchFieldException e) {
-            logger.log(Level.WARNING, "Failed to set tickTime for skill with ID "+id+"!", e);
+            logger.log(Level.WARNING, "Failed to set tickTime for skill with ID " + id + "!", e);
         }
     }
+
     public static void onServerStarted(){
-        for (int skillId : WyvernMods.skillName.keySet()){
-            setSkillName(skillId, WyvernMods.skillName.get(skillId));
+        for (Map.Entry<Integer, String> entry : WyvernMods.skillName.entrySet()){
+            setSkillName(entry.getKey(), entry.getValue());
         }
-        for (int skillId : WyvernMods.skillDifficulty.keySet()){
-            setSkillDifficulty(skillId, WyvernMods.skillDifficulty.get(skillId));
+        for (Map.Entry<Integer, Float> entry : WyvernMods.skillDifficulty.entrySet()){
+            setSkillDifficulty(entry.getKey(), entry.getValue());
         }
-        for (int skillId : WyvernMods.skillTickTime.keySet()){
-            setSkillTickTime(skillId, WyvernMods.skillTickTime.get(skillId));
+        for (Map.Entry<Integer, Long> entry : WyvernMods.skillTickTime.entrySet()){
+            setSkillTickTime(entry.getKey(), entry.getValue());
         }
 
         if (WyvernMods.changePreachingLocation) {
-            SkillTemplate preaching = SkillSystem.templates.get(SkillList.PREACHING);
+            SkillTemplate preaching = getSkillTemplateSafe(SkillList.PREACHING);
+            if (preaching == null) {
+                return;
+            }
             int[] deps3 = {SkillList.MASONRY};
             try {
                 ReflectionUtil.setPrivateField(preaching, ReflectionUtil.getField(preaching.getClass(), "dependencies"), deps3);
             } catch (IllegalAccessException | NoSuchFieldException e) {
-                logger.log(Level.WARNING, "Failed to rename preaching!", e);
+                logger.log(Level.WARNING, "Failed to update preaching dependencies!", e);
             }
         }
     }
+
     public static void preInit(){
         try{
             ClassPool classPool = HookManager.getInstance().getClassPool();
@@ -112,14 +141,14 @@ public class SkillChanges {
             if (WyvernMods.enableHybridSkillGain) {
                 Util.setReason("Add hybrid skill gain system hook.");
                 CtClass ctSkill = classPool.get("com.wurmonline.server.skills.Skill");
-                replace = "{" +
-                        "  double advanceMultiplicator = " + SkillChanges.class.getName() + ".newDoSkillGainNew($0, $1, $2, $3, $4, $5);" +
-                        "  $0.alterSkill(advanceMultiplicator, false, $4, true, $5);" +
-                        "}";
+                replace = "{"
+                        + "  double advanceMultiplicator = " + SkillChanges.class.getName() + ".newDoSkillGainNew($0, $1, $2, $3, $4, $5);"
+                        + "  $0.alterSkill(advanceMultiplicator, false, $4, true, $5);"
+                        + "}";
                 Util.setBodyDeclared(thisClass, ctSkill, "doSkillGainNew", replace);
             }
 
-        } catch ( NotFoundException | IllegalArgumentException | ClassCastException e) {
+        } catch (NotFoundException | IllegalArgumentException | ClassCastException e) {
             throw new HookException(e);
         }
     }

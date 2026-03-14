@@ -10,6 +10,7 @@ import org.gotti.wurmunlimited.modsupport.creatures.ModCreature;
 
 public class SpectralDrake implements ModCreature {
 	public static int templateId;
+
 	@Override
 	public CreatureTemplateBuilder createCreateTemplateBuilder() {
 		int[] types = {
@@ -19,7 +20,6 @@ public class SpectralDrake implements ModCreature {
 				CreatureTypes.C_TYPE_HUNTING,
 				CreatureTypes.C_TYPE_MONSTER,
 				CreatureTypes.C_TYPE_CARNIVORE,
-				//CreatureTypes.C_TYPE_FENCEBREAKER,
 				CreatureTypes.C_TYPE_NON_NEWBIE,
 				CreatureTypes.C_TYPE_NO_REBIRTH,
 				CreatureTypes.C_TYPE_REGENERATING
@@ -52,6 +52,7 @@ public class SpectralDrake implements ModCreature {
 		templateId = builder.getTemplateId();
 		return builder;
 	}
+
 	@Override
 	public void addEncounters() {
 	}

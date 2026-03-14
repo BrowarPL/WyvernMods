@@ -59,7 +59,7 @@ public class QualityOfLife {
     }
     public static Item getVehicleSafe(Creature pilot) {
         try {
-            if (pilot.getVehicle() != -10)
+            if (pilot.getVehicle() != -10L)
                 return Items.getItem(pilot.getVehicle());
         } catch (NoSuchItemException ignored) {
         }
@@ -67,10 +67,13 @@ public class QualityOfLife {
     }
     @SuppressWarnings("unused")
     public static boolean vehicleHook(Creature performer, Item item) {
+        if (performer == null || item == null) {
+            return false;
+        }
         Item vehicleItem = getVehicleSafe(performer);
 
         // Simplified boolean return to satisfy IDE and Clean Code rules
-        return vehicleItem != null && vehicleItem.isHollow() && insertItemIntoVehicle(item, vehicleItem, performer);
+        return vehicleItem != null && vehicleItem != item && vehicleItem.isHollow() && insertItemIntoVehicle(item, vehicleItem, performer);
     }
     public static void preInit() {
         try {
@@ -100,8 +103,19 @@ public class QualityOfLife {
 
             if (WyvernMods.mineSurfaceToVehicle) {
                 Util.setReason("Allow players to surface mine directly into vehicles.");
-                replace = "$_ = $proceed($$); " + QualityOfLife.class.getName() + ".vehicleHook(performer, $0);";
-                Util.instrumentDeclared(thisClass, ctTileRockBehaviour, "mine", "setDataXY", replace);
+                ctTileRockBehaviour.getDeclaredMethod("mine").instrument(new ExprEditor() {
+                    @Override
+                    public void edit(MethodCall m) throws CannotCompileException {
+                        if (m.getMethodName().equals("createItem") && m.getClassName().equals("com.wurmonline.server.items.ItemFactory")) {
+                            m.replace("{"
+                                    + "  $_ = $proceed($$);"
+                                    + "  if ($_ != null) {"
+                                    + "    " + QualityOfLife.class.getName() + ".vehicleHook(performer, $_);"
+                                    + "  }"
+                                    + "}");
+                        }
+                    }
+                });
             }
 
             if (WyvernMods.chopLogsToVehicle) {

@@ -30,7 +30,7 @@ public class AffinityOrbAction implements ModAction {
 			actionId,
 			"Gain affinity",
 			"infusing",
-			new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
+			new int[] { 6 }
 		);
 		ModActions.registerAction(actionEntry);
 	}
@@ -76,31 +76,6 @@ public class AffinityOrbAction implements ModAction {
 					}
 					AffinityOrbQuestion aoq = new AffinityOrbQuestion(performer, "Affinity Orb", "Which affinity would you like to receive?", performer.getWurmId(), target);
 					aoq.sendQuestion();
-					/*int skillNum = SkillSystem.getRandomSkillNum();
-		            Affinity[] affs = Affinities.getAffinities(player.getWurmId());
-		            boolean found = false;
-		            while (!found) {
-		                boolean hasAffinity = false;
-		                for (Affinity affinity : affs) {
-		                    if (affinity.getSkillNumber() != skillNum) continue;
-		                    hasAffinity = true;
-		                    if (affinity.getNumber() >= 5) break;
-		                    Affinities.setAffinity(player.getWurmId(), skillNum, affinity.getNumber() + 1, false);
-		                    String skillString = SkillSystem.getNameFor(skillNum);
-		                    found = true;
-		                    Items.destroyItem(target.getWurmId());
-		                    player.getCommunicator().sendSafeServerMessage("Vynora infuses you with an affinity for " + skillString + "!");
-		                    break;
-		                }
-		                if (!found && !hasAffinity) {
-		                	String skillString = SkillSystem.getNameFor(skillNum);
-		                    Affinities.setAffinity(player.getWurmId(), skillNum, 1, false);
-		                    Items.destroyItem(target.getWurmId());
-		                    player.getCommunicator().sendSafeServerMessage("Vynora infuses you with an affinity for " + skillString + "!");
-		                    found = true;
-		                }
-		                skillNum = SkillSystem.getRandomSkillNum();
-		            }*/
 				}else{
 					logger.info("Somehow a non-player activated an Affinity Orb...");
 				}

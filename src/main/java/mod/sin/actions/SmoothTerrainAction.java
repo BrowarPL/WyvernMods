@@ -48,7 +48,6 @@ public class SmoothTerrainAction implements ModAction {
                         Actions.ACTION_TYPE_QUICK,
                         Actions.ACTION_TYPE_IGNORERANGE
                 }
-                //new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
         );
         ModActions.registerAction(actionEntry);
     }
@@ -73,12 +72,6 @@ public class SmoothTerrainAction implements ModAction {
     static boolean isValidSmoothTile(byte type){
         return Tiles.isTree(type) || Tiles.isBush(type) || type == Tiles.Tile.TILE_SAND.id || type == Tiles.Tile.TILE_GRASS.id || type == Tiles.Tile.TILE_TUNDRA.id || type == Tiles.Tile.TILE_STEPPE.id || type == Tiles.Tile.TILE_SNOW.id;
     }
-    /*static boolean isImmutableTile(byte type) {
-        return Tiles.isTree(type) || Tiles.isBush(type) || type == Tiles.Tile.TILE_CLAY.id || type == Tiles.Tile.TILE_MARSH.id || type == Tiles.Tile.TILE_PEAT.id || type == Tiles.Tile.TILE_TAR.id || type == Tiles.Tile.TILE_HOLE.id || type == Tiles.Tile.TILE_MOSS.id || type == Tiles.Tile.TILE_LAVA.id || Tiles.isMineDoor(type);
-    }
-    static boolean isRockTile(byte type) {
-        return Tiles.isSolidCave(type) || type == Tiles.Tile.TILE_CAVE.id || type == Tiles.Tile.TILE_CAVE_EXIT.id || type == Tiles.Tile.TILE_CLIFF.id || type == Tiles.Tile.TILE_ROCK.id || type == Tiles.Tile.TILE_CAVE_FLOOR_REINFORCED.id;
-    }*/
     public static void smooth(int tilex, int tiley, MeshIO mesh) {
         if(tilex < 50 || tiley < 50 || tilex > Server.surfaceMesh.getSize()-50 || tiley > Server.surfaceMesh.getSize()-50){
             return;

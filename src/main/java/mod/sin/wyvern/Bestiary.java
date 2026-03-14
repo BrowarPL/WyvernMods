@@ -52,6 +52,7 @@ public class Bestiary {
 				|| templateId == WyvernRed.templateId
 				|| templateId == WyvernWhite.templateId;
 	}
+	@SuppressWarnings("unused")
 	public static float getAdjustedSizeMod(CreatureStatus status){
 		try {
 			Creature statusHolder = ReflectionUtil.getPrivateField(status, ReflectionUtil.getField(status.getClass(), "statusHolder"));
@@ -198,37 +199,43 @@ public class Bestiary {
 		return null;
 	}
 	public static void checkEnchantedBreed(Creature creature){
+		if (creature == null || Server.surfaceMesh == null) {
+			return;
+		}
 		int tile = Server.surfaceMesh.getTile(creature.getTileX(), creature.getTileY());
 		byte type = Tiles.decodeType(tile);
-		if (type == Tiles.Tile.TILE_ENCHANTED_GRASS.id){
-			logger.info("Creature "+creature.getName()+" was born on enchanted grass, and has a negative trait removed!");
-			Server.getInstance().broadCastAction(creature.getName()+" was born on enchanted grass, and feels more healthy!", creature, 10);
+		if (type == Tiles.Tile.TILE_ENCHANTED_GRASS.id) {
+			logger.info("Creature " + creature.getName() + " was born on enchanted grass, and has a negative trait removed!");
+			Server.getInstance().broadCastAction(creature.getName() + " was born on enchanted grass, and feels more healthy!", creature, 10);
 			creature.removeRandomNegativeTrait();
 		}
 	}
 	public static boolean shouldBreedName(Creature creature){
-		if(creature.getTemplate().getTemplateId() == WyvernBlack.templateId){
-			return true;
-		}else if(creature.getTemplate().getTemplateId() == WyvernGreen.templateId){
-			return true;
-		}else if(creature.getTemplate().getTemplateId() == WyvernRed.templateId){
-			return true;
-		}else if(creature.getTemplate().getTemplateId() == WyvernWhite.templateId){
-			return true;
-		}else if(creature.getTemplate().getTemplateId() == WyvernBlue.templateId){
-			return true;
-		}else if(creature.getTemplate().getTemplateId() == Charger.templateId){
-			return true;
+		if (creature == null || creature.getTemplate() == null) {
+			return false;
 		}
-		return creature.isHorse();
+		int templateId = creature.getTemplate().getTemplateId();
+		return templateId == WyvernBlack.templateId
+				|| templateId == WyvernGreen.templateId
+				|| templateId == WyvernRed.templateId
+				|| templateId == WyvernWhite.templateId
+				|| templateId == WyvernBlue.templateId
+				|| templateId == Charger.templateId
+				|| creature.isHorse();
 	}
 	public static boolean isGhostCorpse(Creature creature){
+		if (creature == null || creature.getTemplate() == null) {
+			return false;
+		}
 		int templateId = creature.getTemplate().getTemplateId();
 		return templateId == Avenger.templateId
 				|| templateId == SpiritTroll.templateId
 				|| templateId == Charger.templateId;
 	}
 	public static float getCustomSpellResistance(Creature creature){
+		if (creature == null || creature.getTemplate() == null) {
+			return -1f;
+		}
 		int templateId = creature.getTemplate().getTemplateId();
 		if(templateId == Avenger.templateId){
 			return 0.5f;
@@ -258,7 +265,10 @@ public class Bestiary {
 		return -1f;
 	}
 	public static boolean isNotHitchable(Creature creature){
-		if(creature.isUnique()){
+		if (creature == null || creature.getTemplate() == null) {
+			return true;
+		}
+		if (creature.isUnique()) {
 			return true;
 		}
 		int templateId = creature.getTemplate().getTemplateId();
@@ -269,118 +279,121 @@ public class Bestiary {
 				|| templateId == Creatures.GOBLIN_CID;
 	}
 	public static boolean isSacrificeImmune(Creature creature){
+		if (creature == null) {
+			return true;
+		}
 		return Titans.isTitan(creature)
 				|| Titans.isTitanMinion(creature)
 				|| RareSpawns.isRareCreature(creature)
 				|| creature.isUnique();
 	}
 	public static boolean isArcheryImmune(Creature performer, Creature defender){
-		if(Titans.isTitan(defender) || Titans.isTitanMinion(defender)){
-			performer.getCommunicator().sendCombatNormalMessage("You cannot archer "+defender.getName()+", as it is protected by a Titan.");
+		if (performer == null || defender == null) {
 			return true;
 		}
-		String message = "The "+defender.getName()+" would not be affected by your arrows.";
+		if (Titans.isTitan(defender) || Titans.isTitanMinion(defender)) {
+			performer.getCommunicator().sendCombatNormalMessage("You cannot archer " + defender.getName() + ", as it is protected by a Titan.");
+			return true;
+		}
+		String message = "The " + defender.getName() + " would not be affected by your arrows.";
 		boolean immune = false;
 		Item arrow = Archery.getArrow(performer);
-		if(arrow == null){ // Copied directly from the attack() method in Archery.
+		if (arrow == null) {
 			performer.getCommunicator().sendCombatNormalMessage("You have no arrows left to shoot!");
 			return true;
 		}
-		//int defenderTemplateId = defender.getTemplate().getTemplateId();
-		if(defender.isRegenerating() && arrow.getTemplateId() == ItemList.arrowShaft){
-			message = "The "+defender.getName()+" would not be affected by the "+arrow.getName()+".";
+		if (defender.isRegenerating() && arrow.getTemplateId() == ItemList.arrowShaft) {
+			message = "The " + defender.getName() + " would not be affected by the " + arrow.getName() + ".";
 			immune = true;
-		}/*else if(defender.getTemplate().isNotRebirthable()){
-			immune = true;
-		}*/else if(defender.isUnique()){
+		} else if (defender.isUnique()) {
 			immune = true;
 		}
-		if(immune){
+		if (immune) {
 			performer.getCommunicator().sendCombatNormalMessage(message);
 		}
 		return immune;
 	}
 	public static boolean blockSkillFrom(Creature defender, Creature attacker){
-		if(defender == null || attacker == null){
+		if (defender == null || attacker == null) {
 			return false;
 		}
-		if(defender.isPlayer() && defender.getTarget() != attacker){
+		if (defender.isPlayer() && defender.getTarget() != attacker) {
 			return true;
 		}
-		if(defender.isPlayer()){
+		if (defender.isPlayer()) {
 			Item weap = defender.getPrimWeapon();
-			if(weap != null && weap.isWeapon()){
+			if (weap != null && weap.isWeapon()) {
 				try {
 					double dam = Weapon.getModifiedDamageForWeapon(weap, defender.getSkills().getSkill(SkillList.BODY_STRENGTH), true) * 1000.0;
 					dam += Server.getBuffedQualityEffect(weap.getCurrentQualityLevel() / 100.0f) * (double)Weapon.getBaseDamageForWeapon(weap) * 2400.0;
-					if(attacker.getArmourMod() < 0.1f){
+					if (attacker.getArmourMod() < 0.1f) {
 						return false;
 					}
-					if(dam * attacker.getArmourMod() < 3000){
+					if (dam * attacker.getArmourMod() < 3000) {
 						return true;
 					}
 				} catch (NoSuchSkillException e) {
-					logger.log(Level.WARNING, "", e);
+					logger.log(Level.WARNING, "Error calculating weapon damage", e);
 				}
-			}else{
-				if(defender.getBonusForSpellEffect(Enchants.CRET_BEARPAW) < 50f){
+			} else {
+				if (defender.getBonusForSpellEffect(Enchants.CRET_BEARPAW) < 50f) {
 					return true;
 				}
 			}
 		}
 		try {
-			if(defender.isPlayer() && attacker.getArmour(BodyPartConstants.TORSO) != null){
+			if (defender.isPlayer() && attacker.getArmour(BodyPartConstants.TORSO) != null) {
 				return true;
 			}
 		} catch (NoArmourException | NoSpaceException ignored) {
+			// Expected exception when no armour present
 		}
 		return false;
 	}
 	public static boolean denyPathingOverride(Creature creature){
-		return creature.getTemplate().getTemplateId() == Charger.templateId;
+		return creature != null && creature.getTemplate() != null && creature.getTemplate().getTemplateId() == Charger.templateId;
 	}
 	public static boolean hasCustomCorpseSize(Creature creature){
-		int templateId = creature.getTemplate().getTemplateId();
-		if(templateId == Avenger.templateId){
-			return true;
-		}else{
-			return Titans.isTitan(creature);
+		if (creature == null || creature.getTemplate() == null) {
+			return false;
 		}
+		int templateId = creature.getTemplate().getTemplateId();
+		return templateId == Avenger.templateId || Titans.isTitan(creature);
 	}
 	public static void setCorpseSizes(Creature creature, Item corpse){
-		if(corpse.getTemplateId() != ItemList.corpse){
+		if (creature == null || creature.getTemplate() == null || corpse == null || corpse.getTemplateId() != ItemList.corpse) {
 			return;
 		}
 		int templateId = creature.getTemplate().getTemplateId();
 		boolean sendStatus = false;
 		int size = 50000;
-		if(templateId == Avenger.templateId){
-			size *= 1.2;
+		if (templateId == Avenger.templateId) {
+			size = (int)(size * 1.2);
 			corpse.setSizes(size);
 			sendStatus = true;
-		}else if(Titans.isTitan(creature)){
-			size *= 1.5;
+		} else if (Titans.isTitan(creature)) {
+			size = (int)(size * 1.5);
 			corpse.setSizes(size);
 			sendStatus = true;
-		}else{
+		} else {
 			corpse.setSizes((int)((float)(corpse.getSizeX() * (creature.getSizeModX() & 255)) / 64.0f), (int)((float)(corpse.getSizeY() * (creature.getSizeModY() & 255)) / 64.0f), (int)((float)(corpse.getSizeZ() * (creature.getSizeModZ() & 255)) / 64.0f));
 		}
-		if(sendStatus){
+		if (sendStatus) {
 			try {
 				Zone zone = Zones.getZone((int)corpse.getPosX() >> 2, (int)corpse.getPosY() >> 2, corpse.isOnSurface());
 				zone.removeItem(corpse, true, true);
 				zone.addItem(corpse, true, false, false);
 			} catch (NoSuchZoneException e) {
-				logger.log(Level.WARNING, "", e);
+				logger.log(Level.WARNING, "Error updating corpse zone", e);
 			}
 		}
 	}
 	public static byte newCreatureType(int templateid, byte ctype) throws Exception{
 		CreatureTemplate template = CreatureTemplateFactory.getInstance().getTemplate(templateid);
-		if(ctype == 0 && (template.isAggHuman() || template.getBaseCombatRating() > 10) && !template.isUnique() && !Titans.isTitan(templateid)){
-			if(Server.rand.nextInt(5) == 0){
-				ctype = (byte) (Server.rand.nextInt(11)+1);
-				if(Server.rand.nextInt(50) == 0){
+		if (template != null && ctype == 0 && (template.isAggHuman() || template.getBaseCombatRating() > 10) && !template.isUnique() && !Titans.isTitan(templateid)) {
+			if (Server.rand.nextInt(5) == 0) {
+				ctype = (byte) (Server.rand.nextInt(11) + 1);
+				if (Server.rand.nextInt(50) == 0) {
 					ctype = 99;
 				}
 			}
@@ -388,118 +401,115 @@ public class Bestiary {
 		return ctype;
 	}
 	public static void modifyNewCreature(Creature creature){
-		try{
-			if(Titans.isTitan(creature)){
+		if (creature == null || creature.getTemplate() == null) {
+			return;
+		}
+		try {
+			if (Titans.isTitan(creature)) {
 				Titans.addTitan(creature);
-				MiscChanges.sendGlobalFreedomChat(creature, "The titan "+creature.getName()+" has stepped into the mortal realm. Challenge them if you dare.", 255, 105, 180);
-				/*if(creature.getTemplate().getTemplateId() == Lilith.templateId){
-				    Item titanWeapon = createNewTitanWeapon(creature.getName(), new int[]{VindictivesVengeance.templateId, WilhelmsWrath.templateId});
-					creature.getInventory().insertItem(titanWeapon);
-				}else if(creature.getTemplate().getTemplateId() == Ifrit.templateId){
-				    Item titanWeapon = createNewTitanWeapon(creature.getName(), new int[]{MaartensMight.templateId, RaffehsRage.templateId});
-					creature.getInventory().insertItem(titanWeapon);
-				}*/
+				MiscChanges.sendGlobalFreedomChat(creature, "The titan " + creature.getName() + " has stepped into the mortal realm. Challenge them if you dare.", 255, 105, 180);
 				Titans.addTitanLoot(creature);
-			}else if(creature.getTemplate().getTemplateId() == Facebreyker.templateId){
-				Item club = ItemFactory.createItem(Club.templateId, 80f+(Server.rand.nextFloat()*15f), Server.rand.nextBoolean() ? Materials.MATERIAL_GLIMMERSTEEL : Materials.MATERIAL_ADAMANTINE, Server.rand.nextBoolean() ? (byte) 0 : (byte) 1, "Facebreyker");
+			} else if (creature.getTemplate().getTemplateId() == Facebreyker.templateId) {
+				Item club = ItemFactory.createItem(Club.templateId, 80f + (Server.rand.nextFloat() * 15f), Server.rand.nextBoolean() ? Materials.MATERIAL_GLIMMERSTEEL : Materials.MATERIAL_ADAMANTINE, Server.rand.nextBoolean() ? (byte) 0 : (byte) 1, "Facebreyker");
 				creature.getInventory().insertItem(club);
-			} else if(RareSpawns.isRareCreature(creature)){
-				MiscChanges.sendServerTabMessage("event", "A rare "+creature.getName()+" has surfaced.", 123, 104, 238);
-				Item sealedMap = ItemFactory.createItem(SealedMap.templateId, 60f+(30f*Server.rand.nextFloat()), creature.getName());
+			} else if (RareSpawns.isRareCreature(creature)) {
+				MiscChanges.sendServerTabMessage("event", "A rare " + creature.getName() + " has surfaced.", 123, 104, 238);
+				Item sealedMap = ItemFactory.createItem(SealedMap.templateId, 60f + (30f * Server.rand.nextFloat()), creature.getName());
 				creature.getInventory().insertItem(sealedMap, true);
 			}
-		}catch(Exception e){
-			logger.log(Level.WARNING, "", e);
+		} catch (Exception e) {
+			logger.log(Level.WARNING, "Error modifying new creature", e);
 		}
 	}
 	private static void setCombatRating(int templateId, float value){
-		try{
+		try {
 			CreatureTemplate template = CreatureTemplateFactory.getInstance().getTemplate(templateId);
-			if(template != null){
+			if (template != null) {
 				ReflectionUtil.setPrivateField(template, ReflectionUtil.getField(template.getClass(), "baseCombatRating"), value);
 			}
 		} catch (NoSuchCreatureTemplateException | IllegalArgumentException | IllegalAccessException | ClassCastException | NoSuchFieldException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error setting combat rating for template " + templateId, e);
 		}
 	}
 	private static void setNaturalArmour(int templateId, float value){
-		try{
+		try {
 			CreatureTemplate template = CreatureTemplateFactory.getInstance().getTemplate(templateId);
-			if(template != null){
+			if (template != null) {
 				ReflectionUtil.setPrivateField(template, ReflectionUtil.getField(template.getClass(), "naturalArmour"), value);
 			}
 		} catch (NoSuchCreatureTemplateException | IllegalArgumentException | IllegalAccessException | ClassCastException | NoSuchFieldException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error setting natural armour for template " + templateId, e);
 		}
 	}
 	private static void setCorpseModel(int templateId, String model){
-		try{
+		try {
 			CreatureTemplate template = CreatureTemplateFactory.getInstance().getTemplate(templateId);
-			if(template != null){
+			if (template != null) {
 				ReflectionUtil.setPrivateField(template, ReflectionUtil.getField(template.getClass(), "corpsename"), model);
 			}
-		} catch(NoSuchCreatureTemplateException e){
+		} catch (NoSuchCreatureTemplateException e) {
 			if (templateId != 0) {
-				logger.severe("Could not find template for creature with template id: "+templateId+e);
-			}else{
-				logger.info("TemplateID was 0 while trying to set corpse model: "+model+". This is probably intentional");
+				logger.severe("Could not find template for creature with template id: " + templateId + " - " + e.getMessage());
+			} else {
+				logger.info("TemplateID was 0 while trying to set corpse model: " + model + ". This is probably intentional");
 			}
-		}
-		catch (IllegalArgumentException | IllegalAccessException | ClassCastException | NoSuchFieldException e) {
-			logger.log(Level.WARNING, "", e);
+		} catch (IllegalArgumentException | IllegalAccessException | ClassCastException | NoSuchFieldException e) {
+			logger.log(Level.WARNING, "Error setting corpse model for template " + templateId, e);
 		}
 	}
 	private static void setUniqueTypes(int templateId){
-		try{
+		try {
 			CreatureTemplate template = CreatureTemplateFactory.getInstance().getTemplate(templateId);
-			if(template != null){
+			if (template != null) {
 				ReflectionUtil.setPrivateField(template, ReflectionUtil.getField(template.getClass(), "isNotRebirthable"), true);
 				ReflectionUtil.setPrivateField(template, ReflectionUtil.getField(template.getClass(), "regenerating"), false);
 			}
 		} catch (NoSuchCreatureTemplateException | IllegalArgumentException | IllegalAccessException | ClassCastException | NoSuchFieldException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error setting unique types for template " + templateId, e);
 		}
 	}
 	private static void setGhost(int templateId){
-		try{
+		try {
 			CreatureTemplate template = CreatureTemplateFactory.getInstance().getTemplate(templateId);
-			if(template != null){
+			if (template != null) {
 				ReflectionUtil.setPrivateField(template, ReflectionUtil.getField(template.getClass(), "ghost"), true);
 			}
 		} catch (NoSuchCreatureTemplateException | IllegalArgumentException | IllegalAccessException | ClassCastException | NoSuchFieldException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error setting ghost for template " + templateId, e);
 		}
 	}
 	private static void setNoCorpse(int templateId){
-		try{
+		try {
 			CreatureTemplate template = CreatureTemplateFactory.getInstance().getTemplate(templateId);
-			if(template != null){
+			if (template != null) {
 				ReflectionUtil.setPrivateField(template, ReflectionUtil.getField(template.getClass(), "noCorpse"), true);
 			}
 		} catch (NoSuchCreatureTemplateException | IllegalArgumentException | IllegalAccessException | ClassCastException | NoSuchFieldException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error setting noCorpse for template " + templateId, e);
 		}
 	}
 	private static void setGrazer(int templateId){
-		try{
+		try {
 			CreatureTemplate template = CreatureTemplateFactory.getInstance().getTemplate(templateId);
-			if(template != null){
+			if (template != null) {
 				ReflectionUtil.setPrivateField(template, ReflectionUtil.getField(template.getClass(), "grazer"), true);
 			}
 		} catch (NoSuchCreatureTemplateException | IllegalArgumentException | IllegalAccessException | ClassCastException | NoSuchFieldException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error setting grazer for template " + templateId, e);
 		}
 	}
 	private static void setSkill(int templateId, int skillId, float value){
-		try{
+		try {
 			CreatureTemplate template = CreatureTemplateFactory.getInstance().getTemplate(templateId);
-			if(template != null){
+			if (template != null) {
 				Skills skills = ReflectionUtil.getPrivateField(template, ReflectionUtil.getField(template.getClass(), "skills"));
-				skills.learnTemp(skillId, value);
-				ReflectionUtil.setPrivateField(template, ReflectionUtil.getField(template.getClass(), "skills"), skills);
+				if (skills != null) {
+					skills.learnTemp(skillId, value);
+					ReflectionUtil.setPrivateField(template, ReflectionUtil.getField(template.getClass(), "skills"), skills);
+				}
 			}
 		} catch (NoSuchCreatureTemplateException | IllegalArgumentException | IllegalAccessException | ClassCastException | NoSuchFieldException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error setting skill for template " + templateId, e);
 		}
 	}
 	private static void setWorgFields(int templateId) {
@@ -638,13 +648,16 @@ public class Bestiary {
 	// acidBolt1 [very flickery]
 	// lightningTail1 [weird effect]
 	public static void addCreatureSpecialEffect(long creatureId, Communicator comm, Creature creature){
+		if (creature == null || creature.getTemplate() == null || comm == null) {
+			return;
+		}
 		int templateId = creature.getTemplate().getTemplateId();
-		if(templateId == IceCat.templateId){
+		if (templateId == IceCat.templateId) {
 			String particle = "iceBall_1_1";
 			sendParticleEffect(comm, creatureId, creature, particle, Float.MAX_VALUE);
-		}else if(templateId == FireCrab.templateId){
+		} else if (templateId == FireCrab.templateId) {
 			sendAddEffect(comm, creatureId, (byte) 1);
-		}else if(templateId == FireGiant.templateId){
+		} else if (templateId == FireGiant.templateId) {
 			sendAddEffect(comm, creatureId, (byte) 1);
 		}
 	}

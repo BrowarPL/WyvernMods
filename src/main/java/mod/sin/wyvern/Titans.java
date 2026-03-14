@@ -24,7 +24,12 @@ import com.wurmonline.server.zones.Zones;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
-import mod.sin.creatures.titans.*;
+import mod.sin.creatures.titans.Ifrit;
+import mod.sin.creatures.titans.IfritFiend;
+import mod.sin.creatures.titans.IfritSpider;
+import mod.sin.creatures.titans.Lilith;
+import mod.sin.creatures.titans.LilithWraith;
+import mod.sin.creatures.titans.LilithZombie;
 import mod.sin.items.caches.ArtifactCache;
 import mod.sin.items.caches.TreasureMapCache;
 import mod.sin.lib.Util;
@@ -51,8 +56,18 @@ public class Titans {
         Connection dbcon = ModSupportDb.getModSupportDb();
         PreparedStatement ps = null;
         try {
-            ps = dbcon.prepareStatement("UPDATE ObjectiveTimers SET TIMER = " + System.currentTimeMillis() + " WHERE ID = \"TITAN\"");
-            ps.executeUpdate();
+            ps = dbcon.prepareStatement("UPDATE ObjectiveTimers SET TIMER = ? WHERE ID = ?");
+            ps.setLong(1, System.currentTimeMillis());
+            ps.setString(2, "TITAN");
+            int updated = ps.executeUpdate();
+            DbUtilities.closeDatabaseObjects(ps, null);
+            ps = null;
+            if (updated == 0) {
+                ps = dbcon.prepareStatement("INSERT INTO ObjectiveTimers (ID, TIMER) VALUES (?, ?)");
+                ps.setString(1, "TITAN");
+                ps.setLong(2, System.currentTimeMillis());
+                ps.executeUpdate();
+            }
         }
         catch (SQLException e) {
             throw new RuntimeException(e);
@@ -62,15 +77,19 @@ public class Titans {
             DbConnector.returnConnection(dbcon);
         }
     }
+
     public static void initializeTitanTimer(){
         Connection dbcon = ModSupportDb.getModSupportDb();
         PreparedStatement ps = null;
         ResultSet rs = null;
         try {
-            ps = dbcon.prepareStatement("SELECT * FROM ObjectiveTimers WHERE ID = \"TITAN\"");
+            ps = dbcon.prepareStatement("SELECT * FROM ObjectiveTimers WHERE ID = ?");
+            ps.setString(1, "TITAN");
             rs = ps.executeQuery();
-            if(!rs.isClosed()) {
+            if(rs.next()) {
                 lastSpawnedTitan = rs.getLong("TIMER");
+            } else {
+                lastSpawnedTitan = 0;
             }
         }
         catch (SQLException e) {
@@ -80,7 +99,7 @@ public class Titans {
             DbUtilities.closeDatabaseObjects(ps, rs);
             DbConnector.returnConnection(dbcon);
         }
-        logger.info("Initialized Titan timer: "+lastSpawnedTitan);
+        logger.info("Initialized Titan timer: " + lastSpawnedTitan);
         initializedTitans = true;
     }
 
@@ -96,7 +115,7 @@ public class Titans {
         }
 
         try {
-            Item cache = ItemFactory.createItem(Server.rand.nextBoolean() ? TreasureMapCache.templateId : ArtifactCache.templateId, 90f+(10f*Server.rand.nextFloat()), titan.getName());
+            Item cache = ItemFactory.createItem(Server.rand.nextBoolean() ? TreasureMapCache.templateId : ArtifactCache.templateId, 90f + (10f * Server.rand.nextFloat()), titan.getName());
             inv.insertItem(cache, true);
         } catch (FailedException | NoSuchTemplateException e) {
             logger.log(Level.WARNING, "", e);
@@ -116,6 +135,7 @@ public class Titans {
             Server.getInstance().broadCastAction(titan.getName() + "'s ability destroys a mine door!", titan, 50);
         }
     }
+
     public static Creature[] getUndergroundCreatures(int x, int y){
         VolaTile tCave = Zones.getOrCreateTile(x, y, false);
         if(tCave == null){
@@ -133,6 +153,7 @@ public class Titans {
         return templateId == Lilith.templateId
                 || templateId == Ifrit.templateId;
     }
+
     public static boolean isTitan(Creature creature){
         return isTitan(creature.getTemplate().getTemplateId());
     }
@@ -148,24 +169,13 @@ public class Titans {
         return isTitanMinion(creature.getTemplate().getTemplateId());
     }
 
-    // --- Advanced Abilities --- //
     public static void lilithMyceliumVoidAttack(Creature titan, Creature lCret, int tilex, int tiley){
         if (lCret.isUnique() || lCret.isInvulnerable() || lCret == titan || isTitanMinion(lCret)){
             return;
         }
         lCret.addWoundOfType(lCret, Wound.TYPE_INFECTION, 1, true, 1.0f, true, 50000f, 0f, 0f, true, true);
-        /*if (!lCret.addWoundOfType(lCret, Wound.TYPE_INFECTION, 1, true, 1.0f, true, 50000f)) {
-            Creatures.getInstance().setCreatureDead(lCret);
-            Players.getInstance().setCreatureDead(lCret);
-            lCret.setTeleportPoints((short)tilex, (short)tiley, titan.getLayer(), 0);
-            lCret.startTeleporting();
-            lCret.getCommunicator().sendAlertServerMessage("You are absorbed by the Mycelium and brought to Lilith!");
-            lCret.getCommunicator().sendTeleport(false);
-            if (!lCret.isPlayer()) {
-                lCret.getMovementScheme().resumeSpeedModifier();
-            }
-        }*/
     }
+
     public static void ifritMassIncinerateAttack(Creature titan, Creature lCret){
         if (lCret.isUnique() || lCret.isInvulnerable() || lCret == titan || isTitanMinion(lCret)){
             return;
@@ -183,26 +193,25 @@ public class Titans {
             Server.getInstance().broadCastAction(titan.getName() + " has engulfed " + lCret.getNameWithGenus() + " in flames!", titan, 50);
         } else {
             lCret.getCommunicator().sendAlertServerMessage("The heat around you increases. The pain is excruciating!", (byte) 4);
-            eff.setPower(eff.getPower()+200f);
+            eff.setPower(eff.getPower() + 200f);
             eff.setTimeleft(180);
             lCret.sendUpdateSpellEffect(eff);
             Server.getInstance().broadCastAction(titan.getName() + " has engulfed " + lCret.getNameWithGenus() + " in flames again, increasing the intensity!", titan, 50);
         }
     }
 
-
     public static void performAdvancedAbility(Creature titan, int range, int radius){
         int tilex = titan.getTileX();
         int tiley = titan.getTileY();
-        if(titan.getTemplate().getTemplateId() == Lilith.templateId){ // Lilith Ability
-            int tarx = (tilex-(range))+(Server.rand.nextInt(1+(range*2)));
-            int tary = (tiley-(range))+(Server.rand.nextInt(1+(range*2)));
+        if(titan.getTemplate().getTemplateId() == Lilith.templateId){
+            int tarx = (tilex - range) + (Server.rand.nextInt(1 + (range * 2)));
+            int tary = (tiley - range) + (Server.rand.nextInt(1 + (range * 2)));
             int sx = Zones.safeTileX(tarx - radius);
             int ex = Zones.safeTileX(tarx + radius);
             int sy = Zones.safeTileY(tary - radius);
             int ey = Zones.safeTileY(tary + radius);
             Zones.flash(tarx, tary, false);
-            Server.getInstance().broadCastAction(titan.getName() + " casts Mycelium Void, turning the earth to fungus and pulling enemies to "+titan.getHimHerItString()+"!", titan, 50);
+            Server.getInstance().broadCastAction(titan.getName() + " casts Mycelium Void, turning the earth to fungus and pulling enemies to " + titan.getHimHerItString() + "!", titan, 50);
             for (int x = sx; x <= ex; ++x) {
                 for (int y = sy; y <= ey; ++y) {
                     VolaTile t = Zones.getOrCreateTile(x, y, true);
@@ -214,7 +223,6 @@ public class Titans {
                     byte type = Tiles.decodeType(tile);
                     Tiles.Tile theTile = Tiles.getTile(type);
                     byte data = Tiles.decodeData(tile);
-                    // Copied from Fungus to prevent wacko behaviours like deleting minedoors and glitching tunnels:
                     if (type == Tiles.Tile.TILE_FIELD.id
                             || type == Tiles.Tile.TILE_FIELD2.id
                             || type == Tiles.Tile.TILE_GRASS.id
@@ -259,15 +267,15 @@ public class Titans {
                     }
                 }
             }
-        }else if(titan.getTemplate().getTemplateId() == Ifrit.templateId){ // Ifrit Ability
-            int tarx = (tilex-range)+(Server.rand.nextInt(1+(range*2)));
-            int tary = (tiley-range)+(Server.rand.nextInt(1+(range*2)));
+        }else if(titan.getTemplate().getTemplateId() == Ifrit.templateId){
+            int tarx = (tilex - range) + (Server.rand.nextInt(1 + (range * 2)));
+            int tary = (tiley - range) + (Server.rand.nextInt(1 + (range * 2)));
             int sx = Zones.safeTileX(tarx - radius);
             int ex = Zones.safeTileX(tarx + radius);
             int sy = Zones.safeTileY(tary - radius);
             int ey = Zones.safeTileY(tary + radius);
             Zones.flash(tarx, tary, false);
-            Server.getInstance().broadCastAction(titan.getName() + " casts Mass Incinerate, burning enemies near "+titan.getHimHerItString()+"!", titan, 50);
+            Server.getInstance().broadCastAction(titan.getName() + " casts Mass Incinerate, burning enemies near " + titan.getHimHerItString() + "!", titan, 50);
             for (int x = sx; x <= ex; ++x) {
                 for (int y = sy; y <= ey; ++y) {
                     VolaTile t = Zones.getOrCreateTile(x, y, true);
@@ -291,7 +299,6 @@ public class Titans {
         }
     }
 
-    // --- Basic Abilities --- //
     public static void lilithPainRainAttack(Creature titan, Creature lCret, VolaTile t){
         if (lCret.isUnique() || lCret.isInvulnerable() || lCret == titan || isTitanMinion(lCret)){
             return;
@@ -310,14 +317,13 @@ public class Titans {
     public static void performBasicAbility(Creature titan){
         int tilex = titan.getTileX();
         int tiley = titan.getTileY();
-        if(titan.getTemplate().getTemplateId() == Lilith.templateId){ // Lilith Ability
+        if(titan.getTemplate().getTemplateId() == Lilith.templateId){
             int sx = Zones.safeTileX(tilex - 10);
             int sy = Zones.safeTileY(tiley - 10);
             int ex = Zones.safeTileX(tilex + 10);
             int ey = Zones.safeTileY(tiley + 10);
-            //this.calculateArea(sx, sy, ex, ey, tilex, tiley, layer, currstr);
             int x, y;
-            Server.getInstance().broadCastAction(titan.getName() + " casts Pain Rain, harming all around "+titan.getHimHerItString()+"!", titan, 50);
+            Server.getInstance().broadCastAction(titan.getName() + " casts Pain Rain, harming all around " + titan.getHimHerItString() + "!", titan, 50);
             for (x = sx; x <= ex; ++x) {
                 for (y = sy; y <= ey; ++y) {
                     VolaTile t = Zones.getTileOrNull(x, y, titan.isOnSurface());
@@ -336,7 +342,7 @@ public class Titans {
                     }
                 }
             }
-        }else if(titan.getTemplate().getTemplateId() == Ifrit.templateId){ // Ifrit Ability
+        }else if(titan.getTemplate().getTemplateId() == Ifrit.templateId){
             int sx = Zones.safeTileX(tilex - 10);
             int sy = Zones.safeTileY(tiley - 10);
             int ex = Zones.safeTileX(tilex + 10);
@@ -393,7 +399,7 @@ public class Titans {
                 int minhealth = 65435;
                 float maxdam = (float)Math.max(0, minhealth - damage);
                 if (maxdam > 500.0f) {
-                    Server.getInstance().broadCastAction(titan.getName() + " picks a target at random and Smites "+target.getName()+"!", titan, 50);
+                    Server.getInstance().broadCastAction(titan.getName() + " picks a target at random and Smites " + target.getName() + "!", titan, 50);
                     target.getCommunicator().sendAlertServerMessage(titan.getName() + " smites you.", (byte) 4);
                     try {
                         target.addWoundOfType(titan, Wound.TYPE_BURN, target.getBody().getRandomWoundPos(), false, 1.0f, false, maxdam, 0f, 0f, true, true);
@@ -420,10 +426,10 @@ public class Titans {
             return;
         }
         try {
-            Server.getInstance().broadCastAction(titan.getName() + " casts "+spellName+", calling champions to "+titan.getHimHerItString()+" aid!", titan, 50);
+            Server.getInstance().broadCastAction(titan.getName() + " casts " + spellName + ", calling champions to " + titan.getHimHerItString() + " aid!", titan, 50);
             for(int i = 0; i < nums; ++i){
-                int tilex = ((titan.getTileX()*4)+3)-Server.rand.nextInt(7);
-                int tiley = ((titan.getTileY()*4)+3)-Server.rand.nextInt(7);
+                int tilex = ((titan.getTileX() * 4) + 3) - Server.rand.nextInt(7);
+                int tiley = ((titan.getTileY() * 4) + 3) - Server.rand.nextInt(7);
                 int sx = Zones.safeTileX(tilex - 2);
                 int sy = Zones.safeTileY(tiley - 2);
                 int ex = Zones.safeTileX(tilex + 2);
@@ -437,7 +443,9 @@ public class Titans {
                         }
                         Creature[] crets2 = t.getCreatures();
                         for (Creature lCret : crets2) {
-                            if (lCret.isUnique() || lCret.isInvulnerable() || lCret == titan || isTitanMinion(lCret)) continue;
+                            if (lCret.isUnique() || lCret.isInvulnerable() || lCret == titan || isTitanMinion(lCret)) {
+                                continue;
+                            }
                             if(Server.rand.nextInt(3) == 0){
                                 target = lCret;
                                 break;
@@ -446,7 +454,9 @@ public class Titans {
                         Creature[] undergroundCreatures = getUndergroundCreatures(x, y);
                         if(undergroundCreatures != null){
                             for(Creature lCret : undergroundCreatures){
-                                if (lCret.isUnique() || lCret.isInvulnerable() || lCret == titan || isTitanMinion(lCret)) continue;
+                                if (lCret.isUnique() || lCret.isInvulnerable() || lCret == titan || isTitanMinion(lCret)) {
+                                    continue;
+                                }
                                 if(Server.rand.nextInt(3) == 0){
                                     target = lCret;
                                     break;
@@ -461,8 +471,7 @@ public class Titans {
                         break;
                     }
                 }
-                // public static Creature doNew(int templateid, float aPosX, float aPosY, float aRot, int layer, String name, byte gender) throws Exception {
-                Creature champion = Creature.doNew(templateType, tilex, tiley, 360f*Server.rand.nextFloat(), titan.getLayer(), "", (byte)0);
+                Creature champion = Creature.doNew(templateType, tilex, tiley, 360f * Server.rand.nextFloat(), titan.getLayer(), "", (byte)0);
                 if(target != null){
                     champion.setOpponent(target);
                 }
@@ -471,6 +480,7 @@ public class Titans {
             logger.log(Level.WARNING, "", e);
         }
     }
+
     public static void summonMinions(Creature titan, int nums){
         int templateType = -10;
         String spellName = "";
@@ -486,10 +496,10 @@ public class Titans {
             return;
         }
         try {
-            Server.getInstance().broadCastAction(titan.getName() + " casts "+spellName+", calling minions to "+titan.getHimHerItString()+" aid!", titan, 50);
+            Server.getInstance().broadCastAction(titan.getName() + " casts " + spellName + ", calling minions to " + titan.getHimHerItString() + " aid!", titan, 50);
             for(int i = 0; i < nums; ++i){
-                int tilex = ((titan.getTileX()*4)+3)-Server.rand.nextInt(7);
-                int tiley = ((titan.getTileY()*4)+3)-Server.rand.nextInt(7);
+                int tilex = ((titan.getTileX() * 4) + 3) - Server.rand.nextInt(7);
+                int tiley = ((titan.getTileY() * 4) + 3) - Server.rand.nextInt(7);
                 int sx = Zones.safeTileX(tilex - 10);
                 int sy = Zones.safeTileY(tiley - 10);
                 int ex = Zones.safeTileX(tilex + 10);
@@ -503,7 +513,9 @@ public class Titans {
                         }
                         Creature[] crets2 = t.getCreatures();
                         for (Creature lCret : crets2) {
-                            if (lCret.isUnique() || lCret.isInvulnerable() || lCret == titan || isTitanMinion(lCret)) continue;
+                            if (lCret.isUnique() || lCret.isInvulnerable() || lCret == titan || isTitanMinion(lCret)) {
+                                continue;
+                            }
                             if(Server.rand.nextInt(3) == 0){
                                 target = lCret;
                                 break;
@@ -512,7 +524,9 @@ public class Titans {
                         Creature[] undergroundCreatures = getUndergroundCreatures(x, y);
                         if(undergroundCreatures != null){
                             for(Creature lCret : undergroundCreatures){
-                                if (lCret.isUnique() || lCret.isInvulnerable() || lCret == titan || isTitanMinion(lCret)) continue;
+                                if (lCret.isUnique() || lCret.isInvulnerable() || lCret == titan || isTitanMinion(lCret)) {
+                                    continue;
+                                }
                                 if(Server.rand.nextInt(3) == 0){
                                     target = lCret;
                                     break;
@@ -527,8 +541,7 @@ public class Titans {
                         break;
                     }
                 }
-                // public static Creature doNew(int templateid, float aPosX, float aPosY, float aRot, int layer, String name, byte gender) throws Exception {
-                Creature minion = Creature.doNew(templateType, tilex, tiley, 360f*Server.rand.nextFloat(), titan.getLayer(), "", (byte)0);
+                Creature minion = Creature.doNew(templateType, tilex, tiley, 360f * Server.rand.nextFloat(), titan.getLayer(), "", (byte)0);
                 if(target != null){
                     minion.setOpponent(target);
                 }
@@ -540,24 +553,24 @@ public class Titans {
 
     public static HashMap<Creature, Integer> titanDamage = new HashMap<>();
     protected static HashMap<Long, Integer> titanAdvancedTimed = new HashMap<>();
+
     protected static void pollTimeMechanics(Creature titan){
         int currentDamage = titan.getStatus().damage;
         long wurmid = titan.getWurmId();
         if(currentDamage > 0) {
             if (titan.isOnSurface()) {
-                // Advanced Ability
                 int chance;
                 int range;
                 int radius;
-                if (currentDamage > 52428) { // 20%
+                if (currentDamage > 52428) {
                     chance = 40;
                     range = 7;
                     radius = 2;
-                } else if (currentDamage > 32767) { // 50%
+                } else if (currentDamage > 32767) {
                     chance = 45;
                     range = 5;
                     radius = 1;
-                } else if (currentDamage > 16383) { // 75%
+                } else if (currentDamage > 16383) {
                     chance = 55;
                     range = 4;
                     radius = 1;
@@ -567,112 +580,113 @@ public class Titans {
                     radius = 0;
                 }
                 if (titanAdvancedTimed.containsKey(wurmid)) {
-                    int currentChance = titanAdvancedTimed.get(wurmid);
+                    int currentChance = Math.max(1, titanAdvancedTimed.get(wurmid));
                     boolean success = Server.rand.nextInt(currentChance) == 0;
                     if (success) {
                         performAdvancedAbility(titan, range, radius);
                         titanAdvancedTimed.put(wurmid, currentChance + chance - 1);
                     } else {
-                        titanAdvancedTimed.put(wurmid, currentChance - 1);
+                        titanAdvancedTimed.put(wurmid, Math.max(1, currentChance - 1));
                     }
                 } else {
                     titanAdvancedTimed.put(wurmid, chance);
                 }
-            } else if (!titan.isOnSurface() && Server.rand.nextInt(20) == 0) {
+            } else if (Server.rand.nextInt(20) == 0) {
                 performAdvancedAbility(titan, 3, 3);
             }
         }
     }
+
     protected static void pollDamageMechanics(Creature titan){
         int prevDamage = titanDamage.get(titan);
         int currentDamage = titan.getStatus().damage;
-        if(currentDamage > 0 && prevDamage == 0){ // First attack
-            String msg = "<"+titan.getName()+" [100%]> Mere mortals dare to face me?";
+        if(currentDamage > 0 && prevDamage == 0){
+            String msg = "<" + titan.getName() + " [100%]> Mere mortals dare to face me?";
             MiscChanges.sendGlobalFreedomChat(titan, msg, 255, 105, 180);
             MiscChanges.sendServerTabMessage("titan", msg, 255, 105, 180);
             Zones.flash(titan.getTileX(), titan.getTileY(), false);
         }
-        if(currentDamage > 8191 && prevDamage < 8191){ // 87.5%
-            String msg = "<"+titan.getName()+" [88%]> You actually think you can defeat me?";
+        if(currentDamage > 8191 && prevDamage < 8191){
+            String msg = "<" + titan.getName() + " [88%]> You actually think you can defeat me?";
             MiscChanges.sendGlobalFreedomChat(titan, msg, 255, 105, 180);
             MiscChanges.sendServerTabMessage("titan", msg, 255, 105, 180);
             Zones.flash(titan.getTileX(), titan.getTileY(), false);
         }
-        if(currentDamage > 16383 && prevDamage < 16383){ // 75%
-            String msg = "<"+titan.getName()+" [75%]> I am not alone.";
+        if(currentDamage > 16383 && prevDamage < 16383){
+            String msg = "<" + titan.getName() + " [75%]> I am not alone.";
             MiscChanges.sendGlobalFreedomChat(titan, msg, 255, 105, 180);
             MiscChanges.sendServerTabMessage("titan", msg, 255, 105, 180);
             Zones.flash(titan.getTileX(), titan.getTileY(), false);
-            summonMinions(titan, Server.rand.nextInt(2)+2);
+            summonMinions(titan, Server.rand.nextInt(2) + 2);
         }
-        if(currentDamage > 26214 && prevDamage < 26214){ // 60%
-            String msg = "<"+titan.getName()+" [60%]> You will feel my wrath!";
+        if(currentDamage > 26214 && prevDamage < 26214){
+            String msg = "<" + titan.getName() + " [60%]> You will feel my wrath!";
             MiscChanges.sendGlobalFreedomChat(titan, msg, 255, 105, 180);
             MiscChanges.sendServerTabMessage("titan", msg, 255, 105, 180);
             Zones.flash(titan.getTileX(), titan.getTileY(), false);
             performBasicAbility(titan);
         }
-        if(currentDamage > 32767 && prevDamage < 32767){ // 50%
-            String msg = "<"+titan.getName()+" [50%]> I've had enough of you. Minions, assemble!";
+        if(currentDamage > 32767 && prevDamage < 32767){
+            String msg = "<" + titan.getName() + " [50%]> I've had enough of you. Minions, assemble!";
             MiscChanges.sendGlobalFreedomChat(titan, msg, 255, 105, 180);
             MiscChanges.sendServerTabMessage("titan", msg, 255, 105, 180);
             Zones.flash(titan.getTileX(), titan.getTileY(), false);
-            summonMinions(titan, Server.rand.nextInt(4)+4);
+            summonMinions(titan, Server.rand.nextInt(4) + 4);
             performBasicAbility(titan);
         }
-        if(currentDamage > 39321 && prevDamage < 39321){ // 40%
-            String msg = "<"+titan.getName()+" [40%]> Let's try something new, shall we?";
+        if(currentDamage > 39321 && prevDamage < 39321){
+            String msg = "<" + titan.getName() + " [40%]> Let's try something new, shall we?";
             MiscChanges.sendGlobalFreedomChat(titan, msg, 255, 105, 180);
             MiscChanges.sendServerTabMessage("titan", msg, 255, 105, 180);
             Zones.flash(titan.getTileX(), titan.getTileY(), false);
             performAdvancedAbility(titan, 7, 2);
             performAdvancedAbility(titan, 7, 2);
         }
-        if(currentDamage > 45874 && prevDamage < 45874){ // 30%
-            String msg = "<"+titan.getName()+" [30%]> Perhaps minions aren't enough. Now, try my champions!";
+        if(currentDamage > 45874 && prevDamage < 45874){
+            String msg = "<" + titan.getName() + " [30%]> Perhaps minions aren't enough. Now, try my champions!";
             MiscChanges.sendGlobalFreedomChat(titan, msg, 255, 105, 180);
             MiscChanges.sendServerTabMessage("titan", msg, 255, 105, 180);
             Zones.flash(titan.getTileX(), titan.getTileY(), false);
-            summonChampions(titan, Server.rand.nextInt(2)+2);
+            summonChampions(titan, Server.rand.nextInt(2) + 2);
             performBasicAbility(titan);
         }
-        if(currentDamage > 52428 && prevDamage < 52428){ // 20%
-            String msg = "<"+titan.getName()+" [20%]> Enough! I will end you!";
+        if(currentDamage > 52428 && prevDamage < 52428){
+            String msg = "<" + titan.getName() + " [20%]> Enough! I will end you!";
             MiscChanges.sendGlobalFreedomChat(titan, msg, 255, 105, 180);
             MiscChanges.sendServerTabMessage("titan", msg, 255, 105, 180);
             Zones.flash(titan.getTileX(), titan.getTileY(), false);
             performBasicAbility(titan);
             performAdvancedAbility(titan, 5, 3);
         }
-        if(currentDamage > 58981 && prevDamage < 58981){ // 10%
-            String msg = "<"+titan.getName()+" [10%]> Minions... Champions... Only one way to win a battle: An army!";
+        if(currentDamage > 58981 && prevDamage < 58981){
+            String msg = "<" + titan.getName() + " [10%]> Minions... Champions... Only one way to win a battle: An army!";
             MiscChanges.sendGlobalFreedomChat(titan, msg, 255, 105, 180);
             MiscChanges.sendServerTabMessage("titan", msg, 255, 105, 180);
             Zones.flash(titan.getTileX(), titan.getTileY(), false);
-            summonMinions(titan, Server.rand.nextInt(5)+7);
-            summonChampions(titan, Server.rand.nextInt(3)+3);
+            summonMinions(titan, Server.rand.nextInt(5) + 7);
+            summonChampions(titan, Server.rand.nextInt(3) + 3);
             performBasicAbility(titan);
             performAdvancedAbility(titan, 4, 3);
         }
         if(currentDamage > 16383 && Server.rand.nextInt(10) == 0){
             if(currentDamage > 45874){
-                summonMinions(titan, Server.rand.nextInt(2)+2);
+                summonMinions(titan, Server.rand.nextInt(2) + 2);
             }else if(currentDamage > 32767){
-                summonMinions(titan, Server.rand.nextInt(3)+1);
+                summonMinions(titan, Server.rand.nextInt(3) + 1);
             }else{
-                summonMinions(titan, Server.rand.nextInt(2)+1);
+                summonMinions(titan, Server.rand.nextInt(2) + 1);
             }
         }
         if(currentDamage > 16383 && Server.rand.nextInt(15) == 0){
-            if(currentDamage > 45874){ // 30%
+            if(currentDamage > 45874){
                 if(Server.rand.nextInt(10) == 0){
                     performBasicAbility(titan);
                 }
-            }else if(currentDamage > 32767){ // 50%
+            }else if(currentDamage > 32767){
                 if(Server.rand.nextInt(12) == 0){
                     performBasicAbility(titan);
                 }
-            }else{ // 75%
+            }else{
                 if(Server.rand.nextInt(10) == 0){
                     performBasicAbility(titan);
                 }
@@ -683,6 +697,7 @@ public class Titans {
         }
         titanDamage.put(titan, currentDamage);
     }
+
     public static void pollTitanRegeneration(){
         if(!titans.isEmpty()) {
             for (Creature cret : titans) {
@@ -700,6 +715,7 @@ public class Titans {
             }
         }
     }
+
     public static void pollTitan(Creature titan){
         if(titanDamage.containsKey(titan)){
             int prevDamage = titanDamage.get(titan);
@@ -712,6 +728,7 @@ public class Titans {
             titanDamage.put(titan, titan.getStatus().damage);
         }
     }
+
     public static void pollTitans(){
         for(Creature c : titans){
             if(isTitan(c)){
@@ -723,16 +740,21 @@ public class Titans {
 
     public static ArrayList<Creature> titans = new ArrayList<>();
     public static long lastSpawnedTitan = 0;
+
     public static void addTitan(Creature mob){
         if(isTitan(mob) && !titans.contains(mob)){
             titans.add(mob);
         }
     }
+
     public static void removeTitan(Creature mob){
         if(isTitan(mob)){
             titans.remove(mob);
+            titanDamage.remove(mob);
+            titanAdvancedTimed.remove(mob.getWurmId());
         }
     }
+
     public static void pollTitanSpawn(){
         if(!initializedTitans){
             return;
@@ -741,18 +763,15 @@ public class Titans {
         for(Creature c : crets){
             if(isTitan(c) && !titans.contains(c)){
                 titans.add(c);
-                logger.info("Existing titan identified ("+c.getName()+"). Adding to titan list.");
+                logger.info("Existing titan identified (" + c.getName() + "). Adding to titan list.");
             }
         }
-		/*for(Creature c : titans){
-			if(c.isDead()){
-				titans.remove(c);
-			}
-		}*/
         for(Iterator<Creature> it = titans.iterator(); it.hasNext(); ){
             Creature current = it.next();
             if(current.isDead()){
-                logger.info("Titan was found dead ("+current.getName()+"). Removing from titan list.");
+                logger.info("Titan was found dead (" + current.getName() + "). Removing from titan list.");
+                titanDamage.remove(current);
+                titanAdvancedTimed.remove(current.getWurmId());
                 it.remove();
             }
         }
@@ -769,25 +788,20 @@ public class Titans {
                     if(height > 0 && height < 1000 && Creature.getTileSteepness(x, y, true)[1] < 30){
                         Village v = Villages.getVillage(x, y, true);
                         for (int vx = -50; vx < 50 && v == null; vx += 5) {
-                            for (int vy = -50; vy < 50 && (v = Villages.getVillage(x + vx, y + vy, true)) == null; vy += 5) {}
+                            for (int vy = -50; vy < 50 && (v = Villages.getVillage(x + vx, y + vy, true)) == null; vy += 5) {
+                            }
                         }
                         if(v != null){
                             continue;
                         }
-                        spawnX = x*4;
-                        spawnY = y*4;
+                        spawnX = x * 4;
+                        spawnY = y * 4;
                         found = true;
                     }
                 }
-                /*float worldSizeX = Zones.worldTileSizeX;
-                float worldSizeY = Zones.worldTileSizeY;
-                float minX = worldSizeX*0.25f;
-                float minY = worldSizeY*0.25f;
-                int tilex = (int) (minX+(minX*2*Server.rand.nextFloat()))*4;
-                int tiley = (int) (minY+(minY*2*Server.rand.nextFloat()))*4;*/
                 int[] titanTemplates = {Lilith.templateId, Ifrit.templateId};
                 try {
-                    Creature.doNew(titanTemplates[Server.rand.nextInt(titanTemplates.length)], spawnX, spawnY, 360f*Server.rand.nextFloat(), 0, "", (byte)0);
+                    Creature.doNew(titanTemplates[Server.rand.nextInt(titanTemplates.length)], spawnX, spawnY, 360f * Server.rand.nextFloat(), 0, "", (byte)0);
                     lastSpawnedTitan = System.currentTimeMillis();
                     updateLastSpawnedTitan();
                 } catch (Exception e) {
@@ -808,7 +822,6 @@ public class Titans {
             String replace;
 
             CtClass ctWound = classPool.get("com.wurmonline.server.bodys.Wound");
-            //CtClass ctCreature = classPool.get("com.wurmonline.server.creatures.Creature");
 
             if (WyvernMods.disableTitanNaturalRegeneration) {
                 Util.setReason("Disable natural regeneration on titans.");

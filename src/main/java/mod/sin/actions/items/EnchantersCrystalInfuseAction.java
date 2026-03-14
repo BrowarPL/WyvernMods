@@ -39,7 +39,6 @@ public class EnchantersCrystalInfuseAction implements ModAction {
 			"Infuse",
 			"infusing",
 			new int[]{ Actions.ACTION_TYPE_NOMOVE }
-			//new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
 		);
 		ModActions.registerAction(actionEntry);
 	}
@@ -92,6 +91,9 @@ public class EnchantersCrystalInfuseAction implements ModAction {
 								power = Math.max(power, performer.getSkills().getSkill(SkillList.SOUL).skillCheck(diff, source, 0d, false, 1));
 							}
 							ItemSpellEffects effs = target.getSpellEffects();
+							if(effs == null){
+								effs = new ItemSpellEffects(target.getWurmId());
+							}
 							if(power > 90){
 								byte ench = Crystals.getNewRandomEnchant(target);
 								if(ench != -10){
@@ -105,13 +107,22 @@ public class EnchantersCrystalInfuseAction implements ModAction {
 								}
 							}else if(power > 75){
 								performer.getCommunicator().sendNormalServerMessage("You very carefully infuse the metal "+target.getName()+ ", increasing its magical properties!");
-								for(SpellEffect eff : effs.getEffects()){
-									eff.setPower(eff.getPower()+(eff.getPower()*Server.rand.nextFloat()*0.2f));
+								SpellEffect[] effects = effs.getEffects();
+								if(effects != null){
+									for(SpellEffect eff : effects){
+										eff.setPower(eff.getPower()+(eff.getPower()*Server.rand.nextFloat()*0.2f));
+									}
 								}
 								Items.destroyItem(source.getWurmId());
 							}else if(power > 60){
 								performer.getCommunicator().sendNormalServerMessage("You carefully infuse the "+target.getName()+ ", changing one of its magical properties!");
-								SpellEffect oldEff = effs.getEffects()[Server.rand.nextInt(effs.getEffects().length)];
+								SpellEffect[] effects = effs.getEffects();
+								if(effects == null || effects.length == 0){
+									performer.getCommunicator().sendNormalServerMessage("However, the "+target.getName()+ " has no magical properties to change!");
+									Items.destroyItem(source.getWurmId());
+									return true;
+								}
+								SpellEffect oldEff = effects[Server.rand.nextInt(effects.length)];
 								float oldPower = oldEff.getPower();
 								if(oldEff.type == Enchants.BUFF_BLOODTHIRST){
 									oldPower *= 0.01f;
@@ -127,16 +138,26 @@ public class EnchantersCrystalInfuseAction implements ModAction {
 								Items.destroyItem(source.getWurmId());
 							}else if(power > 35){
 								performer.getCommunicator().sendNormalServerMessage("You manage to infuse the "+target.getName()+ ", shifting its magical properties.");
-								for(SpellEffect eff : effs.getEffects()){
-									eff.setPower(eff.getPower()+((eff.getPower()*Server.rand.nextFloat()*0.3f) * (Server.rand.nextBoolean() ? 1 : -1)));
+								SpellEffect[] effects = effs.getEffects();
+								if(effects != null){
+									for(SpellEffect eff : effects){
+										eff.setPower(eff.getPower()+((eff.getPower()*Server.rand.nextFloat()*0.3f) * (Server.rand.nextBoolean() ? 1 : -1)));
+									}
 								}
 								Items.destroyItem(source.getWurmId());
 							}else if(power > 0){
 								performer.getCommunicator().sendNormalServerMessage("You barely manage to infuse the "+target.getName()+ ", destroying a magical property but increasing the rest.");
-								SpellEffect oldEff = effs.getEffects()[Server.rand.nextInt(effs.getEffects().length)];
+								SpellEffect[] effects = effs.getEffects();
+								if(effects == null || effects.length == 0){
+									performer.getCommunicator().sendNormalServerMessage("However, the "+target.getName()+ " has no magical properties!");
+									Items.destroyItem(source.getWurmId());
+									return true;
+								}
+								SpellEffect oldEff = effects[Server.rand.nextInt(effects.length)];
 								effs.removeSpellEffect(oldEff.type);
-								if(effs.getEffects().length >= 1){
-									for(SpellEffect eff : effs.getEffects()){
+								SpellEffect[] remainingEffects = effs.getEffects();
+								if(remainingEffects != null && remainingEffects.length >= 1){
+									for(SpellEffect eff : remainingEffects){
 										eff.setPower(eff.getPower()+(eff.getPower()*Server.rand.nextFloat()*0.2f));
 									}
 								}else{
@@ -145,19 +166,31 @@ public class EnchantersCrystalInfuseAction implements ModAction {
 								Items.destroyItem(source.getWurmId());
 							}else if(power > -30){
 								performer.getCommunicator().sendNormalServerMessage("You barely fail to infuse the "+target.getName()+ ", reducing the power of its magical properties.");
-								for(SpellEffect eff : effs.getEffects()){
-									eff.setPower(eff.getPower()-(eff.getPower()*Server.rand.nextFloat()*0.2f));
+								SpellEffect[] effects = effs.getEffects();
+								if(effects != null){
+									for(SpellEffect eff : effects){
+										eff.setPower(eff.getPower()-(eff.getPower()*Server.rand.nextFloat()*0.2f));
+									}
 								}
 								Items.destroyItem(source.getWurmId());
 							}else if(power > -60){
 								performer.getCommunicator().sendNormalServerMessage("You horribly fail to infuse the "+target.getName()+ ", removing one of its magical properties.");
-								SpellEffect oldEff = effs.getEffects()[Server.rand.nextInt(effs.getEffects().length)];
+								SpellEffect[] effects = effs.getEffects();
+								if(effects == null || effects.length == 0){
+									performer.getCommunicator().sendNormalServerMessage("However, the "+target.getName()+ " has no magical properties!");
+									Items.destroyItem(source.getWurmId());
+									return true;
+								}
+								SpellEffect oldEff = effects[Server.rand.nextInt(effects.length)];
 								effs.removeSpellEffect(oldEff.type);
 								Items.destroyItem(source.getWurmId());
 							}else{
 								performer.getCommunicator().sendNormalServerMessage("The infusion fails catastrophically, destroying all the magic on the "+target.getName()+"!");
-								for(SpellEffect eff : effs.getEffects()){
-									effs.removeSpellEffect(eff.type);
+								SpellEffect[] effects = effs.getEffects();
+								if(effects != null){
+									for(SpellEffect eff : effects){
+										effs.removeSpellEffect(eff.type);
+									}
 								}
 								Items.destroyItem(source.getWurmId());
 							}

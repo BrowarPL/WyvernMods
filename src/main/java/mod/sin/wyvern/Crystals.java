@@ -17,7 +17,8 @@ import java.util.logging.Logger;
 
 public class Crystals {
 	public static final Logger logger = Logger.getLogger(Crystals.class.getName());
-	public static byte[] enchs = { // Valid enchants to apply to an item with Enchanters Crystals
+
+	public static byte[] enchs = {
 			Enchants.BUFF_BLESSINGDARK,
 			Enchants.BUFF_BLOODTHIRST,
 			Enchants.BUFF_CIRCLE_CUNNING,
@@ -34,10 +35,13 @@ public class Crystals {
 			Enchants.BUFF_WEBARMOUR,
 			Enchants.BUFF_WIND_OF_AGES,
 			110, // Harden
-			114 // Efficiency
-			//110, 111 // Harden and Phasing
+			114  // Efficiency
 	};
+
 	public static byte getNewRandomEnchant(Item target){
+		if (target == null) {
+			return -10;
+		}
 		for(int i = 0; i < 10; ++i) {
 			byte ench = enchs[Server.rand.nextInt(enchs.length)];
 			if(target.getBonusForSpellEffect(ench) == 0f){
@@ -46,68 +50,93 @@ public class Crystals {
 		}
 		return -10;
 	}
+
 	public static double getInfusionDifficulty(Creature performer, Item source, Item target){
-		double diff = 80-source.getCurrentQualityLevel();
-		diff += source.getRarity()*25;
-		diff += 30f - (target.getCurrentQualityLevel()*0.3f);
+		if (performer == null || source == null || target == null) {
+			return Double.MAX_VALUE;
+		}
+
+		double diff = 80 - source.getCurrentQualityLevel();
+		diff += source.getRarity() * 25;
+		diff += 30f - (target.getCurrentQualityLevel() * 0.3f);
 		try {
-			diff -= performer.getSkills().getSkill(SkillList.MIND).getKnowledge()*0.3f;
+			diff -= performer.getSkills().getSkill(SkillList.MIND).getKnowledge() * 0.3f;
 		} catch (NoSuchSkillException e) {
 			logger.log(Level.WARNING, "", e);
 		}
 		return diff;
 	}
+
 	public static double getEnchantersInfusionDifficulty(Creature performer, Item source, Item target){
-		double diff = 120-source.getCurrentQualityLevel();
-		diff += 40f - (target.getCurrentQualityLevel()*0.4f);
+		if (performer == null || source == null || target == null) {
+			return Double.MAX_VALUE;
+		}
+
+		double diff = 120 - source.getCurrentQualityLevel();
+		diff += 40f - (target.getCurrentQualityLevel() * 0.4f);
 		try {
-			diff -= performer.getSkills().getSkill(SkillList.MIND).getKnowledge()*0.3f;
+			diff -= performer.getSkills().getSkill(SkillList.MIND).getKnowledge() * 0.3f;
 		} catch (NoSuchSkillException e) {
 			logger.log(Level.WARNING, "", e);
 		}
-		if(target.getSpellEffects() != null){
-			for (SpellEffect eff : target.getSpellEffects().getEffects()){
-				// Double power-based penalty for BotD
-				if (eff.type == Enchants.BUFF_BLESSINGDARK){
-					diff += eff.getPower() * 0.1f;
+
+		ItemSpellEffects effects = target.getSpellEffects();
+		if(effects != null && effects.getEffects() != null){
+			for (SpellEffect effect : effects.getEffects()){
+				if (effect == null) {
+					continue;
 				}
-				if (eff.type != Enchants.BUFF_BLOODTHIRST) {
-					diff += eff.getPower() * 0.1f;
+				if (effect.type == Enchants.BUFF_BLESSINGDARK){
+					diff += effect.getPower() * 0.1f;
+				}
+				if (effect.type != Enchants.BUFF_BLOODTHIRST) {
+					diff += effect.getPower() * 0.1f;
 				}else{
-					// Bloodthirst penalty (1 per 1000 power)
-					diff += eff.getPower() * 0.001f;
+					diff += effect.getPower() * 0.001f;
 				}
 			}
 		}
 		return diff;
 	}
+
 	public static boolean shouldCancelEnchantersInfusion(Creature performer, Item target){
+		if (performer == null || target == null) {
+			return true;
+		}
 		if(target.getOwnerId() != performer.getWurmId() && target.getLastOwnerId() != performer.getWurmId()){
 			performer.getCommunicator().sendNormalServerMessage("You must own the item you wish to infuse.");
 			return true;
 		}
-		ItemSpellEffects effs = target.getSpellEffects();
-		if(effs == null || effs.getEffects().length == 0){
+		ItemSpellEffects effects = target.getSpellEffects();
+		if(effects == null || effects.getEffects() == null || effects.getEffects().length == 0){
 			performer.getCommunicator().sendNormalServerMessage("The item must be enchanted to be infused.");
 			return true;
 		}
 		return false;
 	}
+
 	public static boolean shouldCancelInfusion(Creature performer, Item source, Item target){
+		if (performer == null || source == null || target == null) {
+			return true;
+		}
 		if(target.getOwnerId() != performer.getWurmId() && target.getLastOwnerId() != performer.getWurmId()){
 			performer.getCommunicator().sendNormalServerMessage("You must own the item you wish to infuse.");
 			return true;
 		}
-		if(source.getRarity() > target.getRarity()+1){
-			performer.getCommunicator().sendNormalServerMessage("The "+source.getName()+" is too powerful, and would outright destroy the "+target.getName()+".");
+		if(source.getRarity() > target.getRarity() + 1){
+			performer.getCommunicator().sendNormalServerMessage("The " + source.getName() + " is too powerful, and would outright destroy the " + target.getName() + ".");
 			return true;
-		}else if(source.getRarity() < target.getRarity()+1){
-			performer.getCommunicator().sendNormalServerMessage("The "+source.getName()+" is not powerful enough to have an effect on the "+target.getName()+". You will need to combine it with other crystals first.");
+		}else if(source.getRarity() < target.getRarity() + 1){
+			performer.getCommunicator().sendNormalServerMessage("The " + source.getName() + " is not powerful enough to have an effect on the " + target.getName() + ". You will need to combine it with other crystals first.");
 			return true;
 		}
 		return false;
 	}
+
 	public static boolean shouldCancelCombine(Creature performer, Item source, Item target){
+		if (performer == null || source == null || target == null) {
+			return true;
+		}
 		if(source.getWurmId() == target.getWurmId()){
 			performer.getCommunicator().sendNormalServerMessage("You can't combine a crystal with itself, silly!");
 			return true;
@@ -127,6 +156,7 @@ public class Crystals {
 			}
 		} catch (NotOwnedException e) {
 			logger.log(Level.WARNING, "", e);
+			return true;
 		}
 		if(source.getRarity() < target.getRarity()){
 			performer.getCommunicator().sendNormalServerMessage("That crystal is too potent for this combination.");
@@ -140,8 +170,9 @@ public class Crystals {
 		}
 		return false;
 	}
+
 	public static boolean isCrystal(Item item){
-		return item.getTemplateId() == ChaosCrystal.templateId
-				|| item.getTemplateId() == EnchantersCrystal.templateId;
+		return item != null && (item.getTemplateId() == ChaosCrystal.templateId
+				|| item.getTemplateId() == EnchantersCrystal.templateId);
 	}
 }

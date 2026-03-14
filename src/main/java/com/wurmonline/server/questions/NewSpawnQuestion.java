@@ -51,21 +51,34 @@ public class NewSpawnQuestion extends Question {
     }
     @Override
     public void answer(Properties answer) {
-        boolean accepted = answer.containsKey("accept") && answer.get("accept") == "true";
+        boolean accepted = answer.containsKey("accept") && "true".equals(answer.get("accept"));
         if (accepted) {
             logger.info("Accepted NewSpawnQuestion");
             int entry = Integer.parseInt(answer.getProperty("spawnpoint"));
             Spawnpoint spawn = spawns.get(entry);
+            if (spawn == null) {
+                this.getResponder().getCommunicator().sendNormalServerMessage("Error: Invalid spawn point selected.");
+                logger.warning("Spawn point not found for entry: " + entry);
+                return;
+            }
             this.spawn((Player) this.getResponder(), spawn);
         }else{
-            boolean transfer = answer.containsKey("transfer") && answer.get("transfer") == "true";
+            boolean transfer = answer.containsKey("transfer") && "true".equals(answer.get("transfer"));
             if(transfer) {
                 logger.info("Respawning player before transfer.");
                 Spawnpoint spawn = spawns.get(0);
+                if (spawn == null) {
+                    this.getResponder().getCommunicator().sendNormalServerMessage("Error: No spawn point available for transfer.");
+                    logger.warning("No spawn point found for transfer");
+                    return;
+                }
                 this.spawn((Player) this.getResponder(), spawn);
                 logger.info("Spawn complete, beginning to unequip all items into inventory.");
-                for(Item equip : this.getResponder().getBody().getAllItems()){
-                    AutoEquipMethods.unequip(equip, this.getResponder());
+                Item[] allItems = this.getResponder().getBody().getAllItems();
+                if (allItems != null) {
+                    for(Item equip : allItems){
+                        AutoEquipMethods.unequip(equip, this.getResponder());
+                    }
                 }
                 if(!this.getResponder().getPrimWeapon().isBodyPartAttached()){
                     AutoEquipMethods.unequip(this.getResponder().getPrimWeapon(), this.getResponder());
@@ -127,8 +140,15 @@ public class NewSpawnQuestion extends Question {
             ++spawnNums;
         }
         Spawnpoint random = getRandomSpawnpoint(spawnNums);
-        spawns.put((int) spawnNums, random);
-        builder += random.description;
+        if (random != null) {
+            spawns.put((int) spawnNums, random);
+            builder += random.description;
+        } else {
+            logger.warning("Failed to find random spawnpoint after 1000 attempts");
+            Spawnpoint fallback = new Spawnpoint(spawnNums, "Server Center", (short) 1024, (short) 1024, true);
+            spawns.put((int) spawnNums, fallback);
+            builder += fallback.description;
+        }
         return builder;
     }
     @Override

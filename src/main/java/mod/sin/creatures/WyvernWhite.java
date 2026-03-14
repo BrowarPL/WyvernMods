@@ -20,9 +20,9 @@ import org.gotti.wurmunlimited.modsupport.vehicles.VehicleFacade;
 
 public class WyvernWhite implements ModCreature, CreatureTypes {
 	public static int templateId;
+
 	@Override
 	public CreatureTemplateBuilder createCreateTemplateBuilder() {
-		// {C_TYPE_MOVE_LOCAL, C_TYPE_VEHICLE, C_TYPE_ANIMAL, C_TYPE_LEADABLE, C_TYPE_GRAZER, C_TYPE_OMNIVORE, C_TYPE_DOMINATABLE, C_TYPE_AGG_HUMAN, C_TYPE_NON_NEWBIE, C_TYPE_BURNING}; - Hell Horse
 		int[] types = {
 				CreatureTypes.C_TYPE_CARNIVORE,
 				CreatureTypes.C_TYPE_MOVE_GLOBAL,
@@ -54,11 +54,6 @@ public class WyvernWhite implements ModCreature, CreatureTypes {
 				CreatureTypes.C_TYPE_MISSION_TRAITOR_OK
 		};
 
-		//public CreatureTemplateBuilder(final String identifier, final String name, final String description,
-		//       final String modelName, final int[] types, final byte bodyType, final short vision, final byte sex, final short centimetersHigh, final short centimetersLong, final short centimetersWide,
-		//       final String deathSndMale, final String deathSndFemale, final String hitSndMale, final String hitSndFemale,
-		//       final float naturalArmour, final float handDam, final float kickDam, final float biteDam, final float headDam, final float breathDam, final float speed, final int moveRate,
-		//       final int[] itemsButchered, final int maxHuntDist, final int aggress) {
 		CreatureTemplateBuilder builder = new CreatureTemplateBuilder("mod.creature.wyvern.white", "White wyvern", "A battle-hardened wyvern with scales as white as the moon.",
 				"model.creature.drake.white", Servers.localServer.PVPSERVER ? pvpTypes : types, BodyTemplate.TYPE_DRAGON, (short) 10, (byte) 0, (short) 350, (short) 100, (short) 60,
 				"sound.death.dragon", "sound.death.dragon", "sound.combat.hit.dragon", "sound.combat.hit.dragon",
@@ -87,10 +82,9 @@ public class WyvernWhite implements ModCreature, CreatureTypes {
 		templateId = builder.getTemplateId();
 		return builder;
 	}
+
 	public ModVehicleBehaviour getVehicleBehaviour() {
-
 		return new ModVehicleBehaviour() {
-
 			@Override
 			public void setSettingsForVehicle(Item item, Vehicle vehicle) {
 			}
@@ -113,6 +107,7 @@ public class WyvernWhite implements ModCreature, CreatureTypes {
 			}
 		};
 	}
+
 	@Override
 	public void addEncounters() {
 		if (templateId == 0)

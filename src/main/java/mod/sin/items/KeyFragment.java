@@ -7,45 +7,49 @@ import com.wurmonline.server.items.Materials;
 import org.gotti.wurmunlimited.modsupport.ItemTemplateBuilder;
 
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class KeyFragment {
 	public static final Logger logger = Logger.getLogger(KeyFragment.class.getName());
 	public static int templateId;
+	private static final String NAME = "key fragment [1/50]";
 
 	public void createTemplate() throws IOException{
-		/* ItemTemplateCreatorContinued.createItemTemplate(737, "Valrei mission item", "items", "excellent", "good", "ok", "poor",
-		 * "A weird item belonging on Valrei.",
-		 * new short[]{32, 59, 147, 60},
-		 * 462, 1, 0, 86400, 3, 5, 50, -10, MiscConstants.EMPTY_BYTE_PRIMITIVE_ARRAY,
-		 * "model.valrei.", 300.0f, 100, 21, 1, false);
-		 */
-		String name = "key fragment [1/50]";
-		ItemTemplateBuilder itemBuilder = new ItemTemplateBuilder("mod.fragment.key");
-		itemBuilder.name(name, "key fragments", "A fragment of the fabled Key of the Heavens.");
-		itemBuilder.itemTypes(new short[]{
-				ItemTypes.ITEM_TYPE_MAGIC,
-				ItemTypes.ITEM_TYPE_FULLPRICE,
-				ItemTypes.ITEM_TYPE_NOSELLBACK,
-				ItemTypes.ITEM_TYPE_SERVERBOUND,
-				ItemTypes.ITEM_TYPE_ARTIFACT
-		});
-		itemBuilder.imageNumber((short) 462);
-		itemBuilder.behaviourType((short) 1);
-		itemBuilder.combatDamage(0);
-		itemBuilder.decayTime(Long.MAX_VALUE);
-		itemBuilder.dimensions(1, 1, 1);
-		itemBuilder.primarySkill((int) MiscConstants.NOID);
-		itemBuilder.bodySpaces(MiscConstants.EMPTY_BYTE_PRIMITIVE_ARRAY);
-		itemBuilder.modelName("model.decoration.gem.resurrectionstone."); //model.valrei.magic
-		itemBuilder.difficulty(5.0f);
-		itemBuilder.weightGrams(250);
-		itemBuilder.material(Materials.MATERIAL_CRYSTAL);
-		itemBuilder.value(5000);
-		itemBuilder.isTraded(true);
+		try {
+			ItemTemplateBuilder itemBuilder = new ItemTemplateBuilder("mod.fragment.key");
+			itemBuilder.name(NAME, "key fragments", "A fragment of the fabled Key of the Heavens.");
+			itemBuilder.itemTypes(new short[]{
+					ItemTypes.ITEM_TYPE_MAGIC,
+					ItemTypes.ITEM_TYPE_FULLPRICE,
+					ItemTypes.ITEM_TYPE_NOSELLBACK,
+					ItemTypes.ITEM_TYPE_SERVERBOUND,
+					ItemTypes.ITEM_TYPE_ARTIFACT
+			});
+			itemBuilder.imageNumber((short) 462);
+			itemBuilder.behaviourType((short) 1);
+			itemBuilder.combatDamage(0);
+			itemBuilder.decayTime(Long.MAX_VALUE);
+			itemBuilder.dimensions(1, 1, 1);
+			itemBuilder.primarySkill((int) MiscConstants.NOID);
+			itemBuilder.bodySpaces(MiscConstants.EMPTY_BYTE_PRIMITIVE_ARRAY);
+			itemBuilder.modelName("model.decoration.gem.resurrectionstone.");
+			itemBuilder.difficulty(5.0f);
+			itemBuilder.weightGrams(250);
+			itemBuilder.material(Materials.MATERIAL_CRYSTAL);
+			itemBuilder.value(5000);
+			itemBuilder.isTraded(true);
 
-		ItemTemplate template = itemBuilder.build();
-		templateId = template.getTemplateId();
-		logger.info(name+" TemplateID: "+templateId);
+			ItemTemplate template = itemBuilder.build();
+			if (template != null) {
+				templateId = template.getTemplateId();
+				logger.info(NAME+" TemplateID: "+templateId);
+			} else {
+				logger.log(Level.SEVERE, "Failed to create item template for "+NAME);
+			}
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Error creating item template for "+NAME, e);
+			throw e;
+		}
 	}
 }

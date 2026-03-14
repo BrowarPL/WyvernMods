@@ -12,44 +12,58 @@ public class KeyEvent {
     public static final Logger logger = Logger.getLogger(KeyEvent.class.getName());
 
     protected static class Response{
-        protected int index;
-        protected long startTime;
-        protected long endTime;
+        protected final int index;
+        protected final long startTime;
+        protected final long endTime;
         protected String response = "";
+
         public Response(int index, int startSecond, int endSecond){
             this.index = index;
             this.startTime = startSecond * TimeConstants.SECOND_MILLIS;
             this.endTime = endSecond * TimeConstants.SECOND_MILLIS;
         }
+
         public void setResponse(String response){
             this.response = response;
         }
+
         public String getResponse(){
             return response;
         }
+
+        public boolean isValidAt(long currentTime) {
+            return startTime < currentTime && endTime > currentTime;
+        }
     }
 
-    protected static ArrayList<Response> responses = new ArrayList<>();
+    protected static final ArrayList<Response> responses = new ArrayList<>();
+
     protected static void resetResponses(){
         responses.clear();
-        responses.add(new Response(0, 40, 60)); // Desire
+        responses.add(new Response(0, 40, 60));   // Desire
         responses.add(new Response(1, 120, 150)); // Fo's Power
         responses.add(new Response(2, 170, 200)); // Magranon's Power
         responses.add(new Response(3, 220, 250)); // Vynora's Power
-        responses.add(new Response(4, 270, 300)); // Liblia's Power
+        responses.add(new Response(4, 270, 300)); // Libila's Power
         responses.add(new Response(5, 340, 370)); // Ascend Template
 
-        // Reset booleans
         hasWeaponEnchant = false;
         hasCreatureEnchant = false;
         hasIndustryEnchant = false;
         hasHeal = false;
         hasTame = false;
+
+        foPower = "";
+        magranonPower = "";
+        vynoraPower = "";
+        libilaPower = "";
+        ascendTemplate = "";
     }
+
     public static String getResponse(int index){
-        for(Response r : responses){
-            if(r.index == index){
-                return r.getResponse();
+        for(Response response : responses){
+            if(response.index == index){
+                return response.getResponse();
             }
         }
         return "";
@@ -70,9 +84,11 @@ public class KeyEvent {
     public static String getFoPowers(){
         return "I offer the following: Life Transfer, Oakshell, Light of Fo, Charm";
     }
+
     public static boolean isValidFo(){
         return isValidFo(getResponse(1).toLowerCase());
     }
+
     public static boolean isValidFo(String response){
         if(response.contains("life transfer") || response.contains("lifetransfer") || response.equals("lt")){
             foPower = "Life Transfer";
@@ -93,6 +109,7 @@ public class KeyEvent {
         }
         return false;
     }
+
     public static String getMagranonPowers(){
         String builder = "I offer the following: ";
         boolean started = false;
@@ -134,6 +151,7 @@ public class KeyEvent {
         builder += ", Strongwall";
         return builder;
     }
+
     public static void setRandomMagranonPower(){
         if(!hasWeaponEnchant){
             magranonPower = "Flaming Aura";
@@ -148,27 +166,29 @@ public class KeyEvent {
             magranonPower = "Strongwall";
         }
     }
+
     public static boolean isValidMagranon(){
         return isValidMagranon(getResponse(2).toLowerCase());
     }
+
     public static boolean isValidMagranon(String response){
-        if((response.contains("flaming aura") || response.contains("flamingaura") || response.contains("flame aura") || response.equals("fa"))){
+        if(response.contains("flaming aura") || response.contains("flamingaura") || response.contains("flame aura") || response.equals("fa")){
             magranonPower = "Flaming Aura";
             hasWeaponEnchant = true;
             return true;
-        }else if((response.contains("frantic") || response.contains("charge"))){
+        }else if(response.contains("frantic") || response.contains("charge")){
             magranonPower = "Frantic Charge";
             hasCreatureEnchant = true;
             return true;
-        }else if((response.contains("mass stam") || response.contains("stamina"))){
+        }else if(response.contains("mass stam") || response.contains("stamina")){
             magranonPower = "Mass Stamina";
             hasHeal = true;
             return true;
-        }else if((response.contains("effic") || response.contains("effec"))){
+        }else if(response.contains("effic") || response.contains("effec")){
             magranonPower = "Efficiency";
             hasIndustryEnchant = true;
             return true;
-        }else if((response.contains("dominate") || response.contains("dom"))){
+        }else if(response.contains("dominate") || response.contains("dom")){
             magranonPower = "Dominate";
             hasTame = true;
             return true;
@@ -178,6 +198,7 @@ public class KeyEvent {
         }
         return false;
     }
+
     public static String getVynoraPowers(){
         String builder = "I offer the following: ";
         builder += "Wind of Ages, Circle of Cunning, Aura of Shared Pain";
@@ -190,6 +211,7 @@ public class KeyEvent {
         builder += ", Opulence";
         return builder;
     }
+
     public static void setRandomVynoraPower(){
         if(!hasWeaponEnchant){
             vynoraPower = "Nimbleness";
@@ -202,23 +224,25 @@ public class KeyEvent {
             hasIndustryEnchant = true;
         }
     }
+
     public static boolean isValidVynora(){
         return isValidVynora(getResponse(3).toLowerCase());
     }
+
     public static boolean isValidVynora(String response){
-        if((response.contains("frost"))){
+        if(response.contains("frost")){
             vynoraPower = "Frostbrand";
             hasWeaponEnchant = true;
             return true;
-        }else if((response.contains("nimb"))){
+        }else if(response.contains("nimb")){
             vynoraPower = "Nimbleness";
             hasWeaponEnchant = true;
             return true;
-        }else if((response.contains("mind stealer") || response.contains("mindstealer"))){
+        }else if(response.contains("mind stealer") || response.contains("mindstealer")){
             vynoraPower = "Mind Stealer";
             hasWeaponEnchant = true;
             return true;
-        }else if((response.contains("excel"))){
+        }else if(response.contains("excel")){
             vynoraPower = "Excel";
             hasCreatureEnchant = true;
             return true;
@@ -239,6 +263,7 @@ public class KeyEvent {
         }
         return false;
     }
+
     public static String getLibilaPowers(){
         String builder = "I offer the following: ";
         builder += "Web Armour";
@@ -260,6 +285,7 @@ public class KeyEvent {
         builder += ", Drain Health, Drain Stamina";
         return builder;
     }
+
     public static void setRandomLibilaPower(){
         if(!hasWeaponEnchant){
             libilaPower = "Rotting Touch";
@@ -274,31 +300,33 @@ public class KeyEvent {
             libilaPower = "Drain Health";
         }
     }
+
     public static boolean isValidLibila(){
         return isValidLibila(getResponse(4).toLowerCase());
     }
+
     public static boolean isValidLibila(String response){
-        if((response.contains("bloodthirst") || response.contains("blood thirst"))){
+        if(response.contains("bloodthirst") || response.contains("blood thirst")){
             libilaPower = "Bloodthirst";
             hasWeaponEnchant = true;
             return true;
-        }else if((response.contains("rotting") || response.contains("touch"))){
+        }else if(response.contains("rotting") || response.contains("touch")){
             libilaPower = "Rotting Touch";
             hasWeaponEnchant = true;
             return true;
-        }else if((response.contains("truehit") || response.contains("truhit"))){
+        }else if(response.contains("truehit") || response.contains("truhit")){
             libilaPower = "Truehit";
             hasCreatureEnchant = true;
             return true;
-        }else if((response.contains("scorn"))){
+        }else if(response.contains("scorn")){
             libilaPower = "Scorn of Libila";
             hasHeal = true;
             return true;
-        }else if((response.contains("blessing") || response.contains("dark") || response.equals("botd"))){
+        }else if(response.contains("blessing") || response.contains("dark") || response.equals("botd")){
             libilaPower = "Blessings of the Dark";
             hasIndustryEnchant = true;
             return true;
-        }else if((response.contains("rebirth"))){
+        }else if(response.contains("rebirth")){
             libilaPower = "Rebirth";
             hasTame = true;
             return true;
@@ -314,6 +342,7 @@ public class KeyEvent {
         }
         return false;
     }
+
     public static void setRandomAscendTemplate(){
         if(Server.rand.nextBoolean()) {
             ascendTemplate = "Fo";
@@ -321,9 +350,11 @@ public class KeyEvent {
             ascendTemplate = "Vynora";
         }
     }
+
     public static boolean isValidAscendTemplate(){
         return isValidAscendTemplate(getResponse(5).toLowerCase());
     }
+
     public static boolean isValidAscendTemplate(String response){
         if(response.equals("fo")){
             ascendTemplate = "Fo";
@@ -340,18 +371,19 @@ public class KeyEvent {
         }
         return false;
     }
+
     protected static boolean isValidResponse(int index, String message){
-        if (index == 0){ // Desire
+        if (index == 0){
             return true;
-        }else if(index == 1){ // Fo Power
+        }else if(index == 1){
             return isValidFo(message);
-        }else if(index == 2){ // Magranon Power
+        }else if(index == 2){
             return isValidMagranon(message);
-        }else if(index == 3) { // Vynora Power
+        }else if(index == 3) {
             return isValidVynora(message);
-        }else if(index == 4){ // Libila Power
+        }else if(index == 4){
             return isValidLibila(message);
-        }else if(index == 5){ // Ascend Template
+        }else if(index == 5){
             return isValidAscendTemplate(message);
         }
         return true;
@@ -360,31 +392,49 @@ public class KeyEvent {
     protected static boolean active = false;
     protected static long startTime = 0;
     protected static Creature performer = null;
+
     public static boolean isActive(){
         return active;
     }
+
     public static void setActive(long time, Creature performer){
         KeyEvent.active = true;
         KeyEvent.startTime = time;
         KeyEvent.performer = performer;
         resetResponses();
     }
+
+    private static String extractResponse(Message message) {
+        String fullMessage = message.getMessage();
+        String senderName = message.getSender().getName();
+        int prefixLength = senderName.length() + 3;
+        if (fullMessage == null || fullMessage.length() <= prefixLength) {
+            return "";
+        }
+        return fullMessage.substring(prefixLength).toLowerCase();
+    }
+
     public static void handlePlayerMessage(Message message){
-        if(performer == message.getSender()){
-            long currentTime = System.currentTimeMillis() - startTime;
-            //logger.info(String.format("Current timer: %s", currentTime));
-            for(Response r : responses){
-                //logger.info(String.format("Checking if index %s is valid at time %s (%s to %s)", r.index, currentTime, r.startTime, r.endTime));
-                if(r.startTime < currentTime && r.endTime > currentTime){
-                    String response = message.getMessage().substring(message.getSender().getName().length()+3).toLowerCase();
-                    //logger.info(String.format("Response at index %s is valid (%s to %s)", r.index, r.startTime, r.endTime));
-                    if (isValidResponse(r.index, response)) {
-                        r.setResponse(response);
-                    }
-                }
+        if (!active || performer == null || message == null || message.getSender() == null) {
+            return;
+        }
+        if(performer != message.getSender()){
+            return;
+        }
+
+        long currentTime = System.currentTimeMillis() - startTime;
+        String response = extractResponse(message);
+        if (response.isEmpty()) {
+            return;
+        }
+
+        for(Response r : responses){
+            if(r.isValidAt(currentTime) && isValidResponse(r.index, response)){
+                r.setResponse(response);
             }
         }
     }
+
     public static void preInit(){
         resetResponses();
     }

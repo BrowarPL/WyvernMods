@@ -35,8 +35,11 @@ public class ItemUtil {
 			ItemList.tomeMagicWhite
 	};
 	public static boolean isSorcery(Item item){
-		for(int id : sorceryIds){
-			if(item.getTemplateId() == id){
+		if (item == null) {
+			return false;
+		}
+		for (int id : sorceryIds) {
+			if (item.getTemplateId() == id) {
 				return true;
 			}
 		}
@@ -117,24 +120,35 @@ public class ItemUtil {
 	// 314,350,351,374,376,378,380,382,388,390,392,394,396,397,413,447,448,449,463,480,581,
 	// 621,623,623,623,623,640,641,642,643,647,702,703,704,705,706,707,710,711,747,749,774,922
 	public static void applyEnchant(Item item, byte enchant, float power){
+		if (item == null) {
+			return;
+		}
 		ItemSpellEffects effs = item.getSpellEffects();
-		if(effs == null){
+		if (effs == null) {
 			effs = new ItemSpellEffects(item.getWurmId());
 		}
 		SpellEffect eff = new SpellEffect(item.getWurmId(), enchant, power, 20000000);
 		effs.addSpellEffect(eff);
-		if(item.getDescription().length() > 0){
-			item.setDescription(item.getDescription()+" ");
+		String description = item.getDescription();
+		if (description != null && description.length() > 0) {
+			item.setDescription(description + " ");
 		}
-		item.setDescription(item.getDescription()+eff.getName().charAt(0)+Math.round(power));
+		String effName = eff.getName();
+		if (effName != null && !effName.isEmpty()) {
+			item.setDescription((description != null ? description : "") + effName.charAt(0) + Math.round(power));
+		}
 	}
 	public static Item createRandomSorcery(byte charges){
+		if (sorceryIds == null || sorceryIds.length == 0) {
+			logger.warning("Cannot create sorcery: sorceryIds array is null or empty");
+			return null;
+		}
 		try {
-			Item sorcery = ItemFactory.createItem(sorceryIds[Server.rand.nextInt(sorceryIds.length)], 90+(10*Server.rand.nextFloat()), null);
-			sorcery.setAuxData((byte) (3-charges));
+			Item sorcery = ItemFactory.createItem(sorceryIds[Server.rand.nextInt(sorceryIds.length)], 90 + (10 * Server.rand.nextFloat()), null);
+			sorcery.setAuxData((byte) (3 - charges));
 			return sorcery;
 		} catch (FailedException | NoSuchTemplateException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error creating random sorcery item", e);
 		}
 		return null;
 	}
@@ -144,58 +158,69 @@ public class ItemUtil {
 				Enchants.BUFF_FLAMING_AURA,
 				Enchants.BUFF_SHARED_PAIN,
 				Enchants.BUFF_ROTTING_TOUCH,
-				Enchants.BUFF_LIFETRANSFER, Enchants.BUFF_LIFETRANSFER, // 2 rolls for LT
+				Enchants.BUFF_LIFETRANSFER, Enchants.BUFF_LIFETRANSFER,
 				Enchants.BUFF_NIMBLENESS,
 				Enchants.BUFF_MINDSTEALER,
 				Enchants.BUFF_FROSTBRAND,
 				Enchants.BUFF_WEBARMOUR,
-				Enchants.BUFF_BLESSINGDARK, Enchants.BUFF_BLESSINGDARK, // 2 rolls for BotD
+				Enchants.BUFF_BLESSINGDARK, Enchants.BUFF_BLESSINGDARK,
 				Enchants.BUFF_VENOM,
 				Enchants.BUFF_WIND_OF_AGES,
-				110, 110, //Harden
-				114, //Efficiency
-				115, //Quarry
-				116, //Prowess
-				117, //Industry
-				118, //Endurance
-				119, //Acuity
+				110, 110,
+				114,
+				115,
+				116,
+				117,
+				118,
+				119,
 		};
 		try {
-			Item enchantOrb = ItemFactory.createItem(EnchantOrb.templateId, 99+(1*Server.rand.nextFloat()), "");
+			Item enchantOrb = ItemFactory.createItem(EnchantOrb.templateId, 99 + (1 * Server.rand.nextFloat()), "");
 			ItemSpellEffects effs = enchantOrb.getSpellEffects();
-			if(effs == null){
+			if (effs == null) {
 				effs = new ItemSpellEffects(enchantOrb.getWurmId());
 			}
 			byte enchant = enchantOrbEnchants[Server.rand.nextInt(enchantOrbEnchants.length)];
 			SpellEffect eff = new SpellEffect(enchantOrb.getWurmId(), enchant, power, 20000000);
 			effs.addSpellEffect(eff);
-			enchantOrb.setDescription(eff.getName()+" "+Math.round(power));
+			String effName = eff.getName();
+			if (effName != null) {
+				enchantOrb.setDescription(effName + " " + Math.round(power));
+			}
 			return enchantOrb;
 		} catch (FailedException | NoSuchTemplateException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error creating enchant orb", e);
 		}
 		return null;
 	}
 	public static Item createRandomPlateChain(float minQL, float maxQL, byte material, String creator){
+		if (plateChainTemplates == null || plateChainTemplates.length == 0) {
+			logger.warning("Cannot create plate/chain armour: templates array is null or empty");
+			return null;
+		}
 		try {
-			Item armour = ItemFactory.createItem(plateChainTemplates[Server.rand.nextInt(plateChainTemplates.length)], minQL+((maxQL-minQL)*Server.rand.nextFloat()), creator);
+			Item armour = ItemFactory.createItem(plateChainTemplates[Server.rand.nextInt(plateChainTemplates.length)], minQL + ((maxQL - minQL) * Server.rand.nextFloat()), creator);
 			armour.setMaterial(material);
 			return armour;
 		} catch (FailedException | NoSuchTemplateException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error creating random plate/chain armour", e);
 		}
 		return null;
 	}
 	public static Item createRandomToolWeapon(float minQL, float maxQL, String creator){
+		if (toolWeaponTemplates == null || toolWeaponTemplates.length == 0) {
+			logger.warning("Cannot create tool/weapon: templates array is null or empty");
+			return null;
+		}
 		try {
-			return ItemFactory.createItem(toolWeaponTemplates[Server.rand.nextInt(toolWeaponTemplates.length)], minQL+((maxQL-minQL)*Server.rand.nextFloat()), creator);
+			return ItemFactory.createItem(toolWeaponTemplates[Server.rand.nextInt(toolWeaponTemplates.length)], minQL + ((maxQL - minQL) * Server.rand.nextFloat()), creator);
 		} catch (FailedException | NoSuchTemplateException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error creating random tool/weapon", e);
 		}
 		return null;
 	}
 	public static Item createRandomLootTool(){
-		try{
+		try {
 			int[] templates = {
 				ItemList.hatchet,
 				ItemList.knifeCarving,
@@ -210,8 +235,8 @@ public class ItemUtil {
 			};
 			int template = templates[random.nextInt(templates.length)];
 			float quality = 100;
-			for(int i = 0; i < 2; ++i){
-				quality = Math.min(quality, Math.max((float)10, 70*random.nextFloat()));
+			for (int i = 0; i < 2; ++i) {
+				quality = Math.min(quality, Math.max(10f, 70 * random.nextFloat()));
 			}
 			byte[] materials = {
 				Materials.MATERIAL_GOLD,
@@ -230,9 +255,9 @@ public class ItemUtil {
 			};
 			byte material = materials[random.nextInt(materials.length)];
 			byte rarity = 0;
-			if(random.nextInt(80) <= 2){
+			if (random.nextInt(80) <= 2) {
 				rarity = 1;
-			}else if(random.nextInt(250) <= 2){
+			} else if (random.nextInt(250) <= 2) {
 				rarity = 2;
 			}
 			byte[] enchants = {
@@ -242,52 +267,44 @@ public class ItemUtil {
 			};
 			byte enchant = enchants[random.nextInt(enchants.length)];
 			float power = 100;
-			for(int i = 0; i < 2; ++i){
-				power = Math.min(power, 20+(60*random.nextFloat()));
+			for (int i = 0; i < 2; ++i) {
+				power = Math.min(power, 20 + (60 * random.nextFloat()));
 			}
 			Item tool = ItemFactory.createItem(template, quality, material, rarity, "");
 			ItemSpellEffects effs = tool.getSpellEffects();
-			if(effs == null){
+			if (effs == null) {
 				effs = new ItemSpellEffects(tool.getWurmId());
 			}
 			SpellEffect eff = new SpellEffect(tool.getWurmId(), enchant, power, 20000000);
 			effs.addSpellEffect(eff);
-			tool.setDescription(eff.getName()+" "+String.valueOf((byte)power));
+			String effName = eff.getName();
+			if (effName != null) {
+				tool.setDescription(effName + " " + String.valueOf((byte)power));
+			}
 			return tool;
 		} catch (FailedException | NoSuchTemplateException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error creating random loot tool", e);
 		}
 		return null;
 	}
 	public static Item createTreasureBox(){
 		try {
-			Item treasureBox = ItemFactory.createItem(TreasureBox.templateId, 10f+(90f*random.nextFloat()), "");
-			if(Server.rand.nextInt(20) == 0){
+			Item treasureBox = ItemFactory.createItem(TreasureBox.templateId, 10f + (90f * random.nextFloat()), "");
+			if (Server.rand.nextInt(20) == 0) {
 				treasureBox.setRarity((byte) 3);
-			}else if(Server.rand.nextInt(5) == 0){
+			} else if (Server.rand.nextInt(5) == 0) {
 				treasureBox.setRarity((byte) 2);
-			}else if(Server.rand.nextBoolean()){
+			} else if (Server.rand.nextBoolean()) {
 				treasureBox.setRarity((byte) 1);
 			}
 			return treasureBox;
 		} catch (FailedException | NoSuchTemplateException e) {
-			logger.log(Level.WARNING, "", e);
+			logger.log(Level.WARNING, "Error creating treasure box", e);
 		}
 		return null;
 	}
 	public static boolean isSingleUseRune(byte rune){
-		switch(rune){
-			case -80:
-			case -81:
-			case -91:
-			case -97:
-			case -104:
-			case -107:
-			case -119:
-			case -126:
-				return true;
-			default:
-				return false;
-		}
+		return rune == -80 || rune == -81 || rune == -91 || rune == -97
+				|| rune == -104 || rune == -107 || rune == -119 || rune == -126;
 	}
 }

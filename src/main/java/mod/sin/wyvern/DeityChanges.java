@@ -8,18 +8,19 @@ import java.util.logging.Logger;
 public class DeityChanges {
     public static final Logger logger = Logger.getLogger(DeityChanges.class.getName());
 
+    private static Deity getDeitySafe(int deityId) {
+        return Deities.getDeity(deityId);
+    }
+
     public static void onServerStarted(){
-        if(Deities.getDeity(101) != null){ // Edit Thelastdab Player God
-            Deity thelastdab = Deities.getDeity(101);
-            // Set template deity
+        Deity thelastdab = getDeitySafe(101);
+        if(thelastdab != null){
             thelastdab.setTemplateDeity(Deities.DEITY_MAGRANON);
             thelastdab.setMountainGod(true);
-            thelastdab.setHateGod(false); // Rolled Libila
-            // Add some defining affinities
+            thelastdab.setHateGod(false);
             thelastdab.setMetalAffinity(true);
             thelastdab.setDeathProtector(true);
             thelastdab.setWarrior(true);
-            // Remove some affinities
             thelastdab.setLearner(false);
             thelastdab.setRepairer(false);
             thelastdab.setBefriendCreature(false);
@@ -27,22 +28,12 @@ public class DeityChanges {
             thelastdab.setClayAffinity(false);
             thelastdab.setWaterGod(false);
         }
-        if(Deities.getDeity(102) != null){
-            Deity reevi = Deities.getDeity(102);
-            // Set template deity
+
+        Deity reevi = getDeitySafe(102);
+        if(reevi != null){
             reevi.setTemplateDeity(Deities.DEITY_MAGRANON);
             reevi.setMountainGod(true);
-            reevi.setWaterGod(false); // Rolled Vynora
+            reevi.setWaterGod(false);
         }
-        /*if(Deities.getDeity(102) != null){ // Edit Cyberhusky player god
-            Deity cyberhusky = Deities.getDeity(102);
-            // Add some defining affinities
-            cyberhusky.hateGod = true;
-            cyberhusky.allowsButchering = true;
-            cyberhusky.warrior = true;
-            // Remove some affinities
-            cyberhusky.woodAffinity = false;
-            cyberhusky.befriendCreature = false;
-        }*/
     }
 }

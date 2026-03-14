@@ -22,8 +22,6 @@ public class Charger implements ModCreature, CreatureTypes {
 
 	@Override
 	public CreatureTemplateBuilder createCreateTemplateBuilder() {
-		// {C_TYPE_MOVE_LOCAL, C_TYPE_VEHICLE, C_TYPE_ANIMAL, C_TYPE_LEADABLE, C_TYPE_GRAZER, C_TYPE_OMNIVORE, C_TYPE_DOMINATABLE, C_TYPE_AGG_HUMAN, C_TYPE_NON_NEWBIE, C_TYPE_BURNING}; - Hell Horse
-		// int[] types = new int[]{7, 6, 13, 3, 29, 39, 60, 61}; - Spider
 		int[] types = {
 				CreatureTypes.C_TYPE_CARNIVORE,
 				CreatureTypes.C_TYPE_MOVE_GLOBAL,
@@ -38,11 +36,6 @@ public class Charger implements ModCreature, CreatureTypes {
 				CreatureTypes.C_TYPE_ANIMAL
 		};
 
-		//public CreatureTemplateBuilder(final String identifier, final String name, final String description,
-		//       final String modelName, final int[] types, final byte bodyType, final short vision, final byte sex, final short centimetersHigh, final short centimetersLong, final short centimetersWide,
-		//       final String deathSndMale, final String deathSndFemale, final String hitSndMale, final String hitSndFemale,
-		//       final float naturalArmour, final float handDam, final float kickDam, final float biteDam, final float headDam, final float breathDam, final float speed, final int moveRate,
-		//       final int[] itemsButchered, final int maxHuntDist, final int aggress) {
 		CreatureTemplateBuilder builder = new CreatureTemplateBuilder("mod.creature.charger", "Charger", "A blazing-fast stallion.",
 				"model.creature.quadraped.horse.hell", types, BodyTemplate.TYPE_HORSE, (short) 5, (byte) 0, (short) 85, (short) 50, (short) 85,
 				"sound.death.horse", "sound.death.horse", "sound.combat.hit.horse", "sound.combat.hit.horse",
@@ -68,18 +61,13 @@ public class Charger implements ModCreature, CreatureTypes {
 		builder.denMaterial(Materials.MATERIAL_WOOD_BIRCH);
 		builder.denName("charger lair");
 		builder.maxGroupAttackSize(100);
-		//builder.color(219, 180, 87);
-		//builder.color(255, 0, 0);
-		//builder.sizeModifier(1024, 1024, 1024);
-		//builder.paintMode(2);
 
 		templateId = builder.getTemplateId();
 		return builder;
 	}
+
 	public ModVehicleBehaviour getVehicleBehaviour() {
-
 		return new ModVehicleBehaviour() {
-
 			@Override
 			public void setSettingsForVehicle(Item item, Vehicle vehicle) {
 			}
@@ -102,6 +90,7 @@ public class Charger implements ModCreature, CreatureTypes {
 			}
 		};
 	}
+
 	@Override
 	public void addEncounters() {
 		if (templateId == 0)

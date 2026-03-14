@@ -23,7 +23,7 @@ public class LeaderboardCustomQuestion extends Question {
     }
     @Override
     public void answer(Properties answer) {
-        boolean accepted = answer.containsKey("okay") && answer.get("okay") == "true";
+        boolean accepted = answer.containsKey("okay") && "true".equals(answer.get("okay"));
         if (accepted) {
             LeaderboardQuestion lbq = new LeaderboardQuestion(this.getResponder(), "Leaderboard", "Which leaderboard would you like to view?", this.getResponder().getWurmId());
             lbq.sendQuestion();
@@ -62,7 +62,6 @@ public class LeaderboardCustomQuestion extends Question {
         PreparedStatement ps = null;
         ResultSet rs = null;
         String name;
-        //int skillNum;
         double skill;
         try {
             dbcon = DbConnector.getPlayerDbCon();
@@ -117,7 +116,6 @@ public class LeaderboardCustomQuestion extends Question {
         PreparedStatement ps = null;
         ResultSet rs = null;
         String name;
-        //int skillNum;
         double skill;
         try {
             dbcon = DbConnector.getPlayerDbCon();
@@ -143,7 +141,6 @@ public class LeaderboardCustomQuestion extends Question {
         PreparedStatement ps = null;
         ResultSet rs = null;
         String name;
-        //int skillNum;
         double affinities;
         try {
             dbcon = DbConnector.getPlayerDbCon();
@@ -169,7 +166,6 @@ public class LeaderboardCustomQuestion extends Question {
         PreparedStatement ps = null;
         ResultSet rs = null;
         String name;
-        //int skillNum;
         double achievements;
         try {
             dbcon = DbConnector.getPlayerDbCon();
@@ -292,7 +288,6 @@ public class LeaderboardCustomQuestion extends Question {
         PreparedStatement ps = null;
         ResultSet rs = null;
         String name;
-        //int skillNum;
         double stat;
         try {
             ps = dbcon.prepareStatement("SELECT name, "+statName+" FROM PlayerStats ORDER BY "+statName+" DESC LIMIT "+limit);
@@ -317,7 +312,6 @@ public class LeaderboardCustomQuestion extends Question {
         PreparedStatement ps = null;
         ResultSet rs = null;
         String name;
-        //int skillNum;
         String mayor;
         double stat;
         try {

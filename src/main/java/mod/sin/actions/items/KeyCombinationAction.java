@@ -23,6 +23,7 @@ import org.nyxcode.wurm.discordrelay.DiscordRelay;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,7 +41,7 @@ public class KeyCombinationAction implements ModAction {
 			actionId,
 			"Call upon the heavens",
 			"intervening",
-			new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
+			new int[] { 6 }
 		);
 		ModActions.registerAction(actionEntry);
 	}
@@ -74,8 +75,15 @@ public class KeyCombinationAction implements ModAction {
 				return actionId;
 			}
 			private boolean hasEnoughFragments(Creature performer){
+				if(performer.getInventory() == null){
+					return false;
+				}
+				Set<Item> items = performer.getInventory().getItems();
+				if(items == null){
+					return false;
+				}
 				int count = 0;
-				for(Item item : performer.getInventory().getItems()){
+				for(Item item : items){
 					if(item.getTemplateId() == KeyFragment.templateId){
 						++count;
 					}
@@ -83,9 +91,16 @@ public class KeyCombinationAction implements ModAction {
 				return count >= 50;
 			}
 			private void removeFragments(Creature performer){
+				if(performer.getInventory() == null){
+					return;
+				}
+				Set<Item> items = performer.getInventory().getItems();
+				if(items == null){
+					return;
+				}
 				int count = 0;
 				ArrayList<Long> fragments = new ArrayList<>();
-				for(Item item : performer.getInventory().getItems()){
+				for(Item item : items){
 					if(item.getTemplateId() == KeyFragment.templateId && count < 50){
 						fragments.add(item.getWurmId());
 						++count;

@@ -35,7 +35,6 @@ public class EternalOrbAction implements ModAction {
 			"Absorb enchants",
 			"absorbing",
 			new int[0]
-			//new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
 		);
 		ModActions.registerAction(actionEntry);
 	}
@@ -81,11 +80,16 @@ public class EternalOrbAction implements ModAction {
 						return true;
 					}
 					ItemSpellEffects teffs = target.getSpellEffects();
-					if(teffs == null || teffs.getEffects().length == 0){
+					if(teffs == null){
 						player.getCommunicator().sendNormalServerMessage("The "+target.getTemplate().getName()+" has no enchants.");
 						return true;
 					}
-					for(SpellEffect eff : teffs.getEffects()){
+					SpellEffect[] effects = teffs.getEffects();
+					if(effects == null || effects.length == 0){
+						player.getCommunicator().sendNormalServerMessage("The "+target.getTemplate().getName()+" has no enchants.");
+						return true;
+					}
+					for(SpellEffect eff : effects){
 						if(eff.type == 120){
 							player.getCommunicator().sendNormalServerMessage("The "+eff.getName()+" enchant makes this item immune to the effects of the "+source.getName()+".");
 							return true;
@@ -97,7 +101,7 @@ public class EternalOrbAction implements ModAction {
 						if(effs == null){
 							effs = new ItemSpellEffects(enchantOrb.getWurmId());
 						}
-						for(SpellEffect teff : teffs.getEffects()){
+						for(SpellEffect teff : effects){
 							byte type = teff.type;
 							SpellEffect newEff = new SpellEffect(enchantOrb.getWurmId(), type, teff.getPower(), 20000000);
 							effs.addSpellEffect(newEff);

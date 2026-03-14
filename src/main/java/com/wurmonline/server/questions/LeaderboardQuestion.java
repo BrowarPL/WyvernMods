@@ -26,7 +26,9 @@ public class LeaderboardQuestion extends Question {
         Connection dbcon = ModSupportDb.getModSupportDb();
         PreparedStatement ps = null;
         try {
-            ps = dbcon.prepareStatement("UPDATE LeaderboardOpt SET OPTIN = " + opt + " WHERE name = \"" + name + "\"");
+            ps = dbcon.prepareStatement("UPDATE LeaderboardOpt SET OPTIN = ? WHERE name = ?");
+            ps.setInt(1, opt);
+            ps.setString(2, name);
             ps.executeUpdate();
         }
         catch (SQLException e) {
@@ -39,9 +41,9 @@ public class LeaderboardQuestion extends Question {
     }
     @Override
     public void answer(Properties answer) {
-        boolean skill = answer.containsKey("accept") && answer.get("accept") == "true";
-        boolean achievements = answer.containsKey("achievements") && answer.get("achievements") == "true";
-        boolean custom = answer.containsKey("custom") && answer.get("custom") == "true";
+        boolean skill = answer.containsKey("accept") && "true".equals(answer.get("accept"));
+        boolean achievements = answer.containsKey("achievements") && "true".equals(answer.get("achievements"));
+        boolean custom = answer.containsKey("custom") && "true".equals(answer.get("custom"));
         if (skill) {
             int entry = Integer.parseInt(answer.getProperty("leaderboard"));
             String val = skillMap.get(entry);
@@ -61,11 +63,11 @@ public class LeaderboardQuestion extends Question {
             lbcq.sendQuestion();
         }else{
             String name = this.getResponder().getName();
-            if(answer.containsKey("optin") && answer.get("optin") == "true"){
+            if(answer.containsKey("optin") && "true".equals(answer.get("optin"))){
                 logger.info("Player "+name+" has opted into Leaderboard system.");
                 setPlayerOptStatus(name, 1);
                 this.getResponder().getCommunicator().sendNormalServerMessage("You have opted into the Leaderboard system!");
-            }else if(answer.containsKey("optout") && answer.get("optout") == "true"){
+            }else if(answer.containsKey("optout") && "true".equals(answer.get("optout"))){
                 logger.info("Player "+name+" has opted out of the Leaderboard system.");
                 setPlayerOptStatus(name, 0);
                 this.getResponder().getCommunicator().sendNormalServerMessage("You have opted out of the Leaderboard system.");
@@ -148,9 +150,14 @@ public class LeaderboardQuestion extends Question {
         PreparedStatement ps = null;
         ResultSet rs = null;
         try {
-            ps = dbcon.prepareStatement("SELECT * FROM LeaderboardOpt WHERE name = \"" + this.getResponder().getName() + "\"");
+            ps = dbcon.prepareStatement("SELECT * FROM LeaderboardOpt WHERE name = ?");
+            ps.setString(1, this.getResponder().getName());
             rs = ps.executeQuery();
-            opted = rs.getInt("OPTIN");
+            if (rs.next()) {
+                opted = rs.getInt("OPTIN");
+            } else {
+                opted = 0;
+            }
         }
         catch (SQLException e) {
             throw new RuntimeException(e);

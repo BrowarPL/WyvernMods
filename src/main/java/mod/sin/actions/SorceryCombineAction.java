@@ -36,7 +36,7 @@ public class SorceryCombineAction implements ModAction {
 			actionId,
 			"Combine sorcery",
 			"combining sorcery",
-			new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
+			new int[] { 6 }
 		);
 		ModActions.registerAction(actionEntry);
 	}
@@ -81,6 +81,10 @@ public class SorceryCombineAction implements ModAction {
 						}
 						int fragments = 0;
 						Set<Item> inventory = performer.getInventory().getItems();
+						if(inventory == null || inventory.isEmpty()){
+							performer.getCommunicator().sendNormalServerMessage("You must have at least two sorcery fragments to combine.");
+							return true;
+						}
 						for(Item i : inventory){
 							if(i.getTemplateId() == SorceryFragment.templateId){
 								++fragments;
@@ -97,6 +101,10 @@ public class SorceryCombineAction implements ModAction {
 							performer.sendActionControl("Combining sorcery", true, act.getTimeLeft());
 						}else if(counter * 10f > performer.getCurrentAction().getTimeLeft()){
 							Set<Item> items = performer.getInventory().getItems();
+							if(items == null || items.isEmpty()){
+								performer.getCommunicator().sendNormalServerMessage("Something went wrong with the combination.");
+								return true;
+							}
 							Item first = null;
 							Item second = null;
 							for(Item i : items){

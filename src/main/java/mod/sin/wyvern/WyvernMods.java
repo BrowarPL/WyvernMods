@@ -420,7 +420,6 @@ public class WyvernMods implements
 		String message = new String(tempStringArr, StandardCharsets.UTF_8);
 		tempStringArr = new byte[byteBuffer.get() & 255];
 		byteBuffer.get(tempStringArr);
-		//String title = new String(tempStringArr, "UTF-8");
 		if(player.mayMute() && message.startsWith("!")){
 			logger.info("Player "+player.getName()+" used custom WyvernMods command: "+message);
 			if(message.startsWith("!toggleESP") && player.getPower() >= 5){
@@ -439,6 +438,13 @@ public class WyvernMods implements
 
 	public void configure(Properties properties) {
 		Prop.properties = properties;
+
+		infoTabLines.clear();
+		customTitles.clear();
+		awardTitles.clear();
+		skillName.clear();
+		skillDifficulty.clear();
+		skillTickTime.clear();
 
 		// -- Configuration Setting -- //
 
@@ -766,8 +772,6 @@ public class WyvernMods implements
 		// Treasure Chest Loot Module
 		enableTreasureChestLootModule = Prop.getBooleanProperty("enableTreasureChestLootModule", enableTreasureChestLootModule);
 
-		// Multiple-option Configuration Parsing
-		// This handles all the configurations that allow multiple different configurations to be applied.
 		for (String name : properties.stringPropertyNames()) {
 			try {
 				String value = properties.getProperty(name);
@@ -779,7 +783,7 @@ public class WyvernMods implements
 					case "depend.requires":
 					case "depend.import":
 					case "depend.suggests":
-						break; //ignore
+						break;
 					default:
 						if (name.startsWith("infoTabLine")) {
 							infoTabLines.add(value);
@@ -802,10 +806,8 @@ public class WyvernMods implements
 							int titleId = Integer.parseInt(values[0]);
 							ArrayList<String> playerList;
 							if (awardTitles.containsKey(titleId)){
-								// Has an entry already, add to the existing list.
 								playerList = awardTitles.get(titleId);
 							}else{
-								// No entry, should create a new array and add it to the map
 								playerList = new ArrayList<>();
 							}
 							for (int i = 1; i < values.length; ++i){
@@ -869,7 +871,6 @@ public class WyvernMods implements
 			}
 		}
 
-		// -- Configuration Print -- //
 		logger.info("Miscellaneous Changes Module: "+enableMiscChangesModule);
 		if(enableMiscChangesModule) {
 			logger.info("Information Tab: " + enableInfoTab);
@@ -1249,115 +1250,65 @@ public class WyvernMods implements
 
 		logger.info("Treasure Chest Loot Module: "+enableTreasureChestLootModule);
 	}
+
 	public static void handleExamine(Creature performer, Item target) {
-		// Im just not a smart man.
-        /*if(target.isContainerLiquid()){
-            boolean found = false;
-            for(Item i : Items.getAllItems()){
-                if(i == target){
-                    found = true;
-                }
-            }
-            if(found){
-                logger.info("Item exists!");
-            }else{
-                logger.info("Item not found.");
-            }
-        }*/
 	}
+
 	public void preInit() {
 		logger.info("Pre-Initializing.");
 		try {
-			ModActions.init(); // Initialize ModActions from Modloader
+			ModActions.init();
 
-			// Misc Changes Module Pre-Init
 			if (enableMiscChangesModule) {
 				MiscChanges.preInit();
 			}
-
-			// Arena Module Pre-Init
 			if (enableArenaModule) {
 				Arena.preInit();
 			}
-
-			// Anti-Cheat Module Pre-Init
 			if (enableAntiCheatModule) {
 				AntiCheat.preInit();
 			}
-
-			// Quality Of Life Module Pre-Init
 			if (enableQualityOfLifeModule) {
 				QualityOfLife.preInit();
 			}
-
-			// Combat Module Pre-Init
 			if (enableCombatModule) {
 				CombatChanges.preInit();
 			}
-
-			// Mastercraft Module Pre-Init
 			if (enableMastercraftModule) {
 				Mastercraft.preInit();
 			}
-
-			// Skill Module Pre-Init
 			if (enableSkillModule) {
 				SkillChanges.preInit();
 			}
-
-			// Meditation Module Pre-Init
 			if (enableMeditationModule) {
 				MeditationPerks.preInit();
 			}
-
-			// Titan Module Pre-Init
 			if (enableTitanModule) {
 				Titans.preInit();
 			}
-
-			// Mission Module Pre-Init
 			if (enableMissionModule) {
 				MissionCreator.preInit();
 			}
-
-			// Mounted Module Pre-Init
 			if (enableMountedModule) {
 				MountedChanges.preInit();
 			}
-
-			// Teleport Module Pre-Init
 			if (enableTeleportModule) {
 				TeleportHandler.preInit();
 			}
-
-			// Economy Module Pre-Init
 			if (enableEconomyModule) {
 				EconomicChanges.preInit();
 			}
-
-			// Supply Depot Module Pre-Init
 			if (enableSupplyDepotModule) {
 				SupplyDepots.preInit();
 			}
-
-			// Bestiary Module Pre-Init
 			if (enableBestiaryModule) {
 				Bestiary.preInit();
 			}
-
-			// Treasure Chest Loot Module Pre-Init
 			if (enableTreasureChestLootModule) {
 				TreasureChests.preInit();
 			}
 
-			// Only clears responses, doesn't have any effect. Harmless to run even if key fragments are not used.
 			KeyEvent.preInit();
-
-			// Bloodlust might no longer be necessary. Code remains for reference.
-			//Bloodlust.preInit();
-
-			// Gem Augmentation is not complete.
-			//GemAugmentation.preInit();
 
 			Class<WyvernMods> thisClass = WyvernMods.class;
 			ClassPool classPool = HookManager.getInstance().getClassPool();
@@ -1367,9 +1318,9 @@ public class WyvernMods implements
 			String replace = WyvernMods.class.getName() + ".handleExamine($2, $3);";
 			Util.insertAfterDeclared(thisClass, ctItemBehaviour, "examine", replace);
 
-			// - Enable custom command handler - //
 			CtClass ctCommunicator = classPool.get("com.wurmonline.server.creatures.Communicator");
 			ctCommunicator.getDeclaredMethod("reallyHandle").instrument(new ExprEditor(){
+				@Override
 				public void edit(MethodCall m) throws CannotCompileException {
 					if (m.getMethodName().equals("reallyHandle_CMD_MESSAGE")) {
 						m.replace("java.nio.ByteBuffer tempBuffer = $1.duplicate();"
@@ -1383,6 +1334,7 @@ public class WyvernMods implements
 			throw new HookException(e);
 		}
 	}
+
 	@Override
 	public void init() {
 		logger.info("Initializing.");
@@ -1397,13 +1349,11 @@ public class WyvernMods implements
 			Bounty.init();
 		}
 
-		// Vanilla:
 		if (WyvernMods.enableMountedModule && WyvernMods.allowBisonMounts) {
 			logger.info("Allowing Bison to be mounted.");
 			ModCreatures.addCreature(new Bison());
 		}
 
-		// Epic:
 		if (WyvernMods.enableBestiaryModule && WyvernMods.allowEpicCreatureNaturalSpawns) {
 			logger.info("Allowing epic creatures to spawn naturally.");
 			ModCreatures.addCreature(new LavaFiend());
@@ -1412,7 +1362,6 @@ public class WyvernMods implements
 		}
 
 		if (WyvernMods.enableBestiaryModule && WyvernMods.enableCustomCreatures) {
-			// Wyverns:
 			if (WyvernMods.enableWyverns) {
 				logger.info("Registering Wyverns.");
 				ModCreatures.addCreature(new WyvernBlack());
@@ -1422,7 +1371,6 @@ public class WyvernMods implements
 				ModCreatures.addCreature(new WyvernBlue());
 			}
 
-			// Flavor Mobs:
 			if (WyvernMods.enableFlavorMobs) {
 				logger.info("Registering Flavor creatures.");
 				ModCreatures.addCreature(new Avenger());
@@ -1435,7 +1383,6 @@ public class WyvernMods implements
 				ModCreatures.addCreature(new SpiritTroll());
 			}
 
-			// Event Mobs:
 			if (WyvernMods.enableEventMobs) {
 				logger.info("Registering Event creatures.");
 				ModCreatures.addCreature(new IceCat());
@@ -1444,34 +1391,30 @@ public class WyvernMods implements
 				ModCreatures.addCreature(new Terror());
 			}
 
-			// Rare Spawns:
 			if (WyvernMods.enableRareSpawns) {
 				logger.info("Registering Rare Spawn creatures.");
 				ModCreatures.addCreature(new Reaper());
 				ModCreatures.addCreature(new SpectralDrake());
 			}
 
-			// Legendaries:
 			if (WyvernMods.enableCustomLegendaries) {
 				logger.info("Registering Legendary creatures.");
 				ModCreatures.addCreature(new Facebreyker());
 			}
 
-			// Titans:
 			if (WyvernMods.enableTitans) {
 				logger.info("Registering Titans.");
 				ModCreatures.addCreature(new Ifrit());
 				ModCreatures.addCreature(new Lilith());
-				// Titan Spawns:
 				logger.info("Register Titan Spawns.");
 				ModCreatures.addCreature(new IfritFiend());
 				ModCreatures.addCreature(new IfritSpider());
 				ModCreatures.addCreature(new LilithWraith());
 				ModCreatures.addCreature(new LilithZombie());
 			}
-
 		}
 	}
+
 	@Override
 	public void onItemTemplatesCreated() {
 		if(WyvernMods.useCustomIcons){
@@ -1495,15 +1438,15 @@ public class WyvernMods implements
 			}
 		}
 	}
+
 	@Override
 	public void onPlayerLogin(Player p) {
 		DatabaseHelper.onPlayerLogin(p);
-
-		// Award Custom Titles on player login
 		if(enableCustomTitlesModule) {
 			PlayerTitles.awardCustomTitles(p);
 		}
 	}
+
 	@Override
 	public void onServerStarted() {
 		logger.info("This version of wyvernmods was altered by Tyoda beep boop");
@@ -1544,7 +1487,6 @@ public class WyvernMods implements
 					ModActions.registerAction(new LeaderboardAction());
 					ModActions.registerAction(new LeaderboardSkillAction());
 				}
-				//ModActions.registerAction(new AddSubGroupAction()); // [5/14/19] Disabled - Added to base game.
 				logger.info("Registering Arena actions.");
 				if (WyvernMods.actionSorceryFragmentCombine) {
 					ModActions.registerAction(new SorceryCombineAction());
@@ -1568,7 +1510,6 @@ public class WyvernMods implements
 				}
 			}
 
-			// Sets up achievement changes specifically for the Leaderboard system.
 			if (WyvernMods.enableActionModule && WyvernMods.actionLeaderboard) {
 				logger.info("Setting up Leaderboard Achievement templates.");
 				AchievementChanges.onServerStarted();
@@ -1576,7 +1517,7 @@ public class WyvernMods implements
 			if(WyvernMods.enableMiscChangesModule) {
 				MiscChanges.changeExistingTitles();
 				if(WyvernMods.changeDeityPassives) {
-						DeityChanges.onServerStarted();
+					DeityChanges.onServerStarted();
 				}
 			}
 
@@ -1601,14 +1542,12 @@ public class WyvernMods implements
 	public static long lastPolledRareSpawns = 0;
 	public static long lastPolledEternalReservoirs = 0;
 	public static long lastPolledMissionCreator = 0;
-	/* Disabled for now, might need to be revisited.
-    public static long lastPolledBloodlust = 0;
-    public static final long pollBloodlustTime = TimeConstants.MINUTE_MILLIS;*/
 	public static long lastPolledUniqueRegeneration = 0;
 	public static final long pollUniqueRegenerationTime = TimeConstants.SECOND_MILLIS;
 	public static long lastPolledUniqueCollection = 0;
 	public static final long pollUniqueCollectionTime = TimeConstants.MINUTE_MILLIS*5;
 	public static long lastPolledTerrainSmooth = 0;
+
 	@Override
 	public void onServerPoll() {
 		if((lastSecondPolled + TimeConstants.SECOND_MILLIS) < System.currentTimeMillis()){
@@ -1636,11 +1575,6 @@ public class WyvernMods implements
 				MissionCreator.pollMissions();
 				lastPolledMissionCreator += pollMissionCreatorTime;
 			}
-            /* Disabled for now, might need to be revisited.
-            if(lastPolledBloodlust + pollBloodlustTime < System.currentTimeMillis()){
-                Bloodlust.pollLusts();
-                lastPolledBloodlust += pollBloodlustTime;
-            }*/
 			if(WyvernMods.enableCombatModule && WyvernMods.useStaticLegendaryRegeneration && lastPolledUniqueRegeneration + pollUniqueRegenerationTime < System.currentTimeMillis()){
 				CombatChanges.pollUniqueRegeneration();
 				lastPolledUniqueRegeneration += pollUniqueRegenerationTime;
@@ -1654,7 +1588,6 @@ public class WyvernMods implements
 				lastPolledTerrainSmooth += pollTerrainSmoothTime;
 			}
 
-			// Update counter
 			if(lastSecondPolled + TimeConstants.SECOND_MILLIS*10 > System.currentTimeMillis()){
 				lastSecondPolled += TimeConstants.SECOND_MILLIS;
 			}else{
@@ -1666,7 +1599,6 @@ public class WyvernMods implements
 				lastPolledRareSpawns = System.currentTimeMillis();
 				lastPolledEternalReservoirs = System.currentTimeMillis();
 				lastPolledMissionCreator = System.currentTimeMillis();
-				//lastPolledBloodlust = System.currentTimeMillis();
 				lastPolledUniqueRegeneration = System.currentTimeMillis();
 				lastPolledUniqueCollection = System.currentTimeMillis();
 				lastPolledTerrainSmooth = System.currentTimeMillis();
@@ -1680,7 +1612,6 @@ public class WyvernMods implements
 		if(window.startsWith("GL-Freedom") && KeyEvent.isActive()){
 			KeyEvent.handlePlayerMessage(message);
 		}
-
 		return MessagePolicy.PASS;
 	}
 

@@ -32,7 +32,7 @@ public class ReceiveMailAction implements ModAction {
 			actionId,
 			"Receive all mail",
 			"receiving",
-			new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
+			new int[] { 6 }
 		);
 		ModActions.registerAction(actionEntry);
 	}
@@ -88,7 +88,7 @@ public class ReceiveMailAction implements ModAction {
 						return true;
 					}
 					Set<WurmMail> mailset = WurmMail.getSentMailsFor(performer.getWurmId(), 100);
-					if(mailset.isEmpty()){
+					if(mailset == null || mailset.isEmpty()){
 						player.getCommunicator().sendSafeServerMessage("You have no mail to collect.");
 						return true;
 					}

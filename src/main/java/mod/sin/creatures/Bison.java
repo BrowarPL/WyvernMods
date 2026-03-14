@@ -14,7 +14,6 @@ import com.wurmonline.server.creatures.NoSuchCreatureTemplateException;
 import com.wurmonline.server.items.Item;
 
 public class Bison implements ModCreature {
-
 	public static int templateId = CreatureTemplateIds.BISON_CID;
 
 	@Override
@@ -53,6 +52,7 @@ public class Bison implements ModCreature {
 			}
 		};
 	}
+
 	@Override
 	public void addEncounters() {
 	}

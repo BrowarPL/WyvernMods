@@ -14,8 +14,6 @@ public class IfritSpider implements ModCreature, CreatureTypes {
 
 	@Override
 	public CreatureTemplateBuilder createCreateTemplateBuilder() {
-		// {C_TYPE_MOVE_LOCAL, C_TYPE_VEHICLE, C_TYPE_ANIMAL, C_TYPE_LEADABLE, C_TYPE_GRAZER, C_TYPE_OMNIVORE, C_TYPE_DOMINATABLE, C_TYPE_AGG_HUMAN, C_TYPE_NON_NEWBIE, C_TYPE_BURNING}; - Hell Horse
-		// int[] types = new int[]{7, 6, 13, 3, 29, 39, 60, 61}; - Spider
 		int[] types = {
 			CreatureTypes.C_TYPE_MOVE_LOCAL,
 			CreatureTypes.C_TYPE_AGG_HUMAN,
@@ -25,11 +23,6 @@ public class IfritSpider implements ModCreature, CreatureTypes {
 			CreatureTypes.C_TYPE_NON_NEWBIE
 		};
 
-		//public CreatureTemplateBuilder(final String identifier, final String name, final String description,
-		//       final String modelName, final int[] types, final byte bodyType, final short vision, final byte sex, final short centimetersHigh, final short centimetersLong, final short centimetersWide,
-		//       final String deathSndMale, final String deathSndFemale, final String hitSndMale, final String hitSndFemale,
-		//       final float naturalArmour, final float handDam, final float kickDam, final float biteDam, final float headDam, final float breathDam, final float speed, final int moveRate,
-		//       final int[] itemsButchered, final int maxHuntDist, final int aggress) {
 		CreatureTemplateBuilder builder = new CreatureTemplateBuilder("mod.creature.ifrit.spider", "Servant of Ifrit", "A mindless minion of Ifrit.",
 				"model.creature.multiped.spider.lava", types, BodyTemplate.TYPE_SPIDER, (short) 30, (byte) 0, (short) 85, (short) 50, (short) 85,
 				"sound.death.spider", "sound.death.spider", "sound.combat.hit.spider", "sound.combat.hit.spider",
@@ -58,6 +51,7 @@ public class IfritSpider implements ModCreature, CreatureTypes {
 		templateId = builder.getTemplateId();
 		return builder;
 	}
+
 	@Override
 	public void addEncounters() {
 	}

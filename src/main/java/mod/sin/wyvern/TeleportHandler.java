@@ -23,36 +23,47 @@ public class TeleportHandler {
 
     protected static HashMap<Long, Float> teleX = new HashMap<>();
     protected static HashMap<Long, Float> teleY = new HashMap<>();
+
     protected static void setTeleportLocationRandom(long wurmid){
-        boolean found = false;
-        while(!found){
+        final int maxAttempts = 10000;
+        for(int attempts = 0; attempts < maxAttempts; attempts++){
             int x = Server.rand.nextInt(Server.surfaceMesh.getSize());
             int y = Server.rand.nextInt(Server.surfaceMesh.getSize());
             short height = Tiles.decodeHeight(Server.surfaceMesh.getTile(x, y));
             if(height > 0 && height < 1000 && Creature.getTileSteepness(x, y, true)[1] < 30){
                 Village v = Villages.getVillage(x, y, true);
                 for (int vx = -50; vx < 50 && v == null; vx += 5) {
-                    for (int vy = -50; vy < 50 && (v = Villages.getVillage(x + vx, y + vy, true)) == null; vy += 5) {}
+                    for (int vy = -50; vy < 50 && (v = Villages.getVillage(x + vx, y + vy, true)) == null; vy += 5) {
+                    }
                 }
                 if(v != null){
                     continue;
                 }
-                teleX.put(wurmid, (float) (x*4));
-                teleY.put(wurmid, (float) (y*4));
-                found = true;
+                teleX.put(wurmid, (float) (x * 4));
+                teleY.put(wurmid, (float) (y * 4));
+                return;
             }
         }
+
+        logger.warning("Failed to find random teleport location after " + maxAttempts + " attempts. Falling back to spawn point.");
+        teleX.put(wurmid, (float) (Servers.localServer.SPAWNPOINTJENNX * 4));
+        teleY.put(wurmid, (float) (Servers.localServer.SPAWNPOINTJENNY * 4));
     }
+
     protected static void setTeleportLocation(long wurmid){
+        if (teleX.containsKey(wurmid) && teleY.containsKey(wurmid)) {
+            return;
+        }
+
         PlayerInfo pinfo = PlayerInfoFactory.getPlayerInfoWithWurmId(wurmid);
         if(pinfo != null){
             logger.info("Player info exists.");
             boolean hasVillage = false;
             for(Village v : Villages.getVillages()){
                 if(v.isCitizen(wurmid)){
-                    logger.info("Player is found in village "+v.getName()+", teleporting to token.");
-                    teleX.put(wurmid, (float) (v.getTokenX()*4));
-                    teleY.put(wurmid, (float) (v.getTokenY()*4));
+                    logger.info("Player is found in village " + v.getName() + ", teleporting to token.");
+                    teleX.put(wurmid, (float) (v.getTokenX() * 4));
+                    teleY.put(wurmid, (float) (v.getTokenY() * 4));
                     hasVillage = true;
                     break;
                 }
@@ -63,8 +74,8 @@ public class TeleportHandler {
                     setTeleportLocationRandom(wurmid);
                 }else{
                     logger.info("Player is not identified as belonging to a village. PvE server detected. Teleporting to JENNX/JENNY.");
-                    teleX.put(wurmid, (float) (Servers.localServer.SPAWNPOINTJENNX*4));
-                    teleY.put(wurmid, (float) (Servers.localServer.SPAWNPOINTJENNY*4));
+                    teleX.put(wurmid, (float) (Servers.localServer.SPAWNPOINTJENNX * 4));
+                    teleY.put(wurmid, (float) (Servers.localServer.SPAWNPOINTJENNY * 4));
                 }
             }
         }else{
@@ -73,11 +84,12 @@ public class TeleportHandler {
                 setTeleportLocationRandom(wurmid);
             }else{
                 logger.info("Player info doesn't exist. PvE server detected. Teleporting to JENNX/JENNY.");
-                teleX.put(wurmid, (float) (Servers.localServer.SPAWNPOINTJENNX*4));
-                teleY.put(wurmid, (float) (Servers.localServer.SPAWNPOINTJENNY*4));
+                teleX.put(wurmid, (float) (Servers.localServer.SPAWNPOINTJENNX * 4));
+                teleY.put(wurmid, (float) (Servers.localServer.SPAWNPOINTJENNY * 4));
             }
         }
     }
+
     public static float getTeleportPosX(long wurmid){
         setTeleportLocation(wurmid);
         if(teleX.containsKey(wurmid)){
@@ -85,12 +97,17 @@ public class TeleportHandler {
         }
         return 4000f;
     }
+
     public static float getTeleportPosY(long wurmid){
+        float result = 4000f;
         if(teleY.containsKey(wurmid)){
-            return teleY.get(wurmid);
+            result = teleY.get(wurmid);
         }
-        return 4000f;
+        teleX.remove(wurmid);
+        teleY.remove(wurmid);
+        return result;
     }
+
     public static void preInit(){
         try{
             ClassPool classPool = HookManager.getInstance().getClassPool();
@@ -101,16 +118,15 @@ public class TeleportHandler {
 
             if (WyvernMods.useArenaTeleportMethod) {
                 Util.setReason("Custom teleportation system for Arena teleport/escape.");
-                replace = "logger.info(\"posx = \"+this.posx+\", posy = \"+this.posy);" +
-                        "if(this.posx >= 4000f && this.posx <= 4050f && this.posy >= 4000f && this.posy <= 4050f){" +
-                        "  this.posx = " + TeleportHandler.class.getName() + ".getTeleportPosX(this.wurmid);" +
-                        "  this.posy = " + TeleportHandler.class.getName() + ".getTeleportPosY(this.wurmid);" +
-                        "}" +
-                        "$_ = $proceed($$);";
+                replace = "if(this.posx >= 4000f && this.posx <= 4050f && this.posy >= 4000f && this.posy <= 4050f){"
+                        + "  this.posx = " + TeleportHandler.class.getName() + ".getTeleportPosX(this.wurmid);"
+                        + "  this.posy = " + TeleportHandler.class.getName() + ".getTeleportPosY(this.wurmid);"
+                        + "}"
+                        + "$_ = $proceed($$);";
                 Util.instrumentDeclared(thisClass, ctPlayerMetaData, "save", "getPosition", replace);
             }
 
-        } catch ( NotFoundException | IllegalArgumentException | ClassCastException e) {
+        } catch (NotFoundException | IllegalArgumentException | ClassCastException e) {
             throw new HookException(e);
         }
     }

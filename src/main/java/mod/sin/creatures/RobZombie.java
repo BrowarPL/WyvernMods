@@ -5,7 +5,10 @@ import com.wurmonline.shared.constants.CreatureTypes;
 import org.gotti.wurmunlimited.modsupport.CreatureTemplateBuilder;
 import org.gotti.wurmunlimited.modsupport.creatures.ModCreature;
 
+@SuppressWarnings("unused")
 public class RobZombie implements ModCreature, CreatureTypes {
+	public static int templateId;
+
 	@Override
 	public CreatureTemplateBuilder createCreateTemplateBuilder() {
 		int[] types = {
@@ -41,8 +44,10 @@ public class RobZombie implements ModCreature, CreatureTypes {
 		builder.combatDamageType((byte)2);
 		builder.maxGroupAttackSize(100);
 
+		templateId = builder.getTemplateId();
 		return builder;
 	}
+
 	@Override
 	public void addEncounters() {
 	}

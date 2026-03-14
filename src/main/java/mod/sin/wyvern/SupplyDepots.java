@@ -27,6 +27,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,8 +42,18 @@ public class SupplyDepots {
 		Connection dbcon = ModSupportDb.getModSupportDb();
 		PreparedStatement ps = null;
 		try {
-			ps = dbcon.prepareStatement("UPDATE ObjectiveTimers SET TIMER = "+System.currentTimeMillis()+" WHERE ID = \"DEPOT\"");
-			ps.executeUpdate();
+			ps = dbcon.prepareStatement("UPDATE ObjectiveTimers SET TIMER = ? WHERE ID = ?");
+			ps.setLong(1, System.currentTimeMillis());
+			ps.setString(2, "DEPOT");
+			int updated = ps.executeUpdate();
+			DbUtilities.closeDatabaseObjects(ps, null);
+			ps = null;
+			if (updated == 0) {
+				ps = dbcon.prepareStatement("INSERT INTO ObjectiveTimers (ID, TIMER) VALUES (?, ?)");
+				ps.setString(1, "DEPOT");
+				ps.setLong(2, System.currentTimeMillis());
+				ps.executeUpdate();
+			}
 		}
 		catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -52,15 +63,19 @@ public class SupplyDepots {
 			DbConnector.returnConnection(dbcon);
 		}
 	}
+
 	public static void initializeDepotTimer(){
 		Connection dbcon = ModSupportDb.getModSupportDb();
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			ps = dbcon.prepareStatement("SELECT * FROM ObjectiveTimers WHERE ID = \"DEPOT\"");
+			ps = dbcon.prepareStatement("SELECT * FROM ObjectiveTimers WHERE ID = ?");
+			ps.setString(1, "DEPOT");
 			rs = ps.executeQuery();
-			if(!rs.isClosed()) {
+			if(rs.next()) {
 				lastSpawnedDepot = rs.getLong("TIMER");
+			} else {
+				lastSpawnedDepot = 0;
 			}
 		}
 		catch (SQLException e) {
@@ -70,14 +85,16 @@ public class SupplyDepots {
 			DbUtilities.closeDatabaseObjects(ps, rs);
 			DbConnector.returnConnection(dbcon);
 		}
-		logger.info("Initialized Supply Depot timer: "+lastSpawnedDepot);
+		logger.info("Initialized Supply Depot timer: " + lastSpawnedDepot);
 		initalizedSupplyDepot = true;
 	}
+
 	public static void addPlayerStatsDepot(String playerName){
 		Connection dbcon = ModSupportDb.getModSupportDb();
 		PreparedStatement ps = null;
 		try {
-			ps = dbcon.prepareStatement("UPDATE PlayerStats SET DEPOTS = DEPOTS + 1 WHERE NAME = \""+playerName+"\"");
+			ps = dbcon.prepareStatement("UPDATE PlayerStats SET DEPOTS = DEPOTS + 1 WHERE NAME = ?");
+			ps.setString(1, playerName);
 			ps.executeUpdate();
 		}
 		catch (SQLException e) {
@@ -88,44 +105,52 @@ public class SupplyDepots {
 			DbConnector.returnConnection(dbcon);
 		}
 	}
+
 	public static void sendDepotEffect(Player player, Item depot){
 		if (!WyvernMods.useSupplyDepotLights){
 			return;
 		}
 		player.getCommunicator().sendAddEffect(depot.getWurmId(), (byte) 25, depot.getPosX(), depot.getPosY(), depot.getPosZ(), (byte) 0);
 	}
+
 	public static void sendDepotEffectsToPlayer(Player player){
-		logger.info("Sending depot effects to player "+player.getName());
+		logger.info("Sending depot effects to player " + player.getName());
 		for(Item depot : depots){
 			sendDepotEffect(player, depot);
 		}
 	}
+
 	public static void sendDepotEffectsToPlayers(Item depot){
 		for(Player p : Players.getInstance().getPlayers()){
 			sendDepotEffect(p, depot);
 		}
 	}
+
 	public static void removeDepotEffect(Item depot){
 		for(Player player : Players.getInstance().getPlayers()){
 			player.getCommunicator().sendRemoveEffect(depot.getWurmId());
 		}
 	}
+
 	public static void removeSupplyDepot(Item depot){
 		depots.remove(depot);
 		removeDepotEffect(depot);
 	}
+
 	private static boolean isSupplyDepot(Item item){
 		return item.getTemplateId() == ArenaSupplyDepot.templateId;
 	}
+
 	public static void pollDepotSpawn(){
-		for(int i = 0; i < depots.size(); ++i){
-			Item depot = depots.get(i);
+		for (Iterator<Item> it = depots.iterator(); it.hasNext(); ) {
+			Item depot = it.next();
 			if(!Items.exists(depot)){
 				logger.info("Supply depot was destroyed, removing from list.");
-				depots.remove(depot);
+				it.remove();
 				removeDepotEffect(depot);
 			}
 		}
+
 		for(Item item : Items.getAllItems()){
 			if(isSupplyDepot(item) && !depots.contains(item)){
 				logger.info("Found existing supply depots, adding to list and sending data to players.");
@@ -133,6 +158,11 @@ public class SupplyDepots {
 				sendDepotEffectsToPlayers(item);
 			}
 		}
+
+		if (host != null && host.isDead()) {
+			host = null;
+		}
+
 		if(!Servers.localServer.PVPSERVER && !WyvernMods.enableDepots){
 			return;
 		}
@@ -143,11 +173,11 @@ public class SupplyDepots {
 			if(host == null){
 				ArrayList<Creature> uniques = new ArrayList<>();
 				for(Creature c : Creatures.getInstance().getCreatures()){
-					if(c.isUnique()){
+					if(c.isUnique() && !c.isDead()){
 						uniques.add(c);
 					}
 				}
-				if(uniques.size() > 0){
+				if(!uniques.isEmpty()){
 					host = uniques.get(Server.rand.nextInt(uniques.size()));
 					MiscChanges.sendGlobalFreedomChat(host, "Greetings! I'll be your host, informing you of the next depot to appear over here on the Arena!", 255, 128, 0);
 				}
@@ -159,17 +189,17 @@ public class SupplyDepots {
 				while(!spawned && i < 20){
 					float worldSizeX = Zones.worldTileSizeX;
 					float worldSizeY = Zones.worldTileSizeY;
-					float minX = worldSizeX*0.2f;
-					float minY = worldSizeY*0.2f;
-					int tilex = (int) (minX+(minX*3*Server.rand.nextFloat()));
-					int tiley = (int) (minY+(minY*3*Server.rand.nextFloat()));
+					float minX = worldSizeX * 0.2f;
+					float minY = worldSizeY * 0.2f;
+					int tilex = (int) (minX + (minX * 3 * Server.rand.nextFloat()));
+					int tiley = (int) (minY + (minY * 3 * Server.rand.nextFloat()));
 					int tile = Server.surfaceMesh.getTile(tilex, tiley);
 					try {
 						if(Tiles.decodeHeight(tile) > 0){
-							Item depot = ItemFactory.createItem(ArenaSupplyDepot.templateId, 50+Server.rand.nextFloat()*40f, (float)(tilex << 2) + 2.0f, (float)(tiley << 2) + 2.0f, Server.rand.nextFloat() * 360.0f, true, (byte) 0, -10, null);
+							Item depot = ItemFactory.createItem(ArenaSupplyDepot.templateId, 50 + Server.rand.nextFloat() * 40f, (float)(tilex << 2) + 2.0f, (float)(tiley << 2) + 2.0f, Server.rand.nextFloat() * 360.0f, true, (byte) 0, -10, null);
 							depots.add(depot);
 							sendDepotEffectsToPlayers(depot);
-							logger.info("New supply depot being placed at "+tilex+", "+tiley);
+							logger.info("New supply depot being placed at " + tilex + ", " + tiley);
 							spawned = true;
 							if(host != null){
 								MiscChanges.sendServerTabMessage("arena", "A new Arena depot has appeared!", 255, 128, 0);
@@ -181,11 +211,12 @@ public class SupplyDepots {
 							lastSpawnedDepot = System.currentTimeMillis();
 							updateLastSpawnedDepot();
 						}else{
-							logger.info("Position "+tilex+", "+tiley+" was invalid, attempting another spawn...");
+							logger.info("Position " + tilex + ", " + tiley + " was invalid, attempting another spawn...");
 							++i;
 						}
 					} catch (Exception e) {
 						logger.log(Level.SEVERE, "Failed to create Arena Depot.", e);
+						++i;
 					}
 				}
 				if(i >= 20){
@@ -193,7 +224,7 @@ public class SupplyDepots {
 				}
 			}else if(host != null){
 				long timeleft = (lastSpawnedDepot + WyvernMods.depotRespawnTime) - System.currentTimeMillis();
-				long minutesLeft = timeleft/TimeConstants.MINUTE_MILLIS;
+				long minutesLeft = timeleft / TimeConstants.MINUTE_MILLIS;
 				if(minutesLeft > 0){
 					if(minutesLeft == 4){
 						MiscChanges.sendServerTabMessage("arena", "The next Arena depot will appear in 5 minutes!", 255, 128, 0);
@@ -210,25 +241,27 @@ public class SupplyDepots {
 	}
 
 	public static long lastAttemptedDepotCapture = 0;
+
 	public static void broadcastCapture(Creature performer){
-		MiscChanges.sendServerTabMessage("arena", performer.getName()+" has claimed an Arena depot!", 255, 128, 0);
-		MiscChanges.sendGlobalFreedomChat(performer, performer.getName()+" has claimed an Arena depot!", 255, 128, 0);
+		MiscChanges.sendServerTabMessage("arena", performer.getName() + " has claimed an Arena depot!", 255, 128, 0);
+		MiscChanges.sendGlobalFreedomChat(performer, performer.getName() + " has claimed an Arena depot!", 255, 128, 0);
 	}
+
 	public static void maybeBroadcastOpen(Creature performer){
 		if(System.currentTimeMillis() > lastAttemptedDepotCapture + WyvernMods.captureMessageInterval){
-			MiscChanges.sendServerTabMessage("arena", performer.getName()+" is beginning to capture an Arena depot!", 255, 128, 0);
-			MiscChanges.sendGlobalFreedomChat(performer, performer.getName()+" is beginning to capture an Arena depot!", 255, 128, 0);
+			MiscChanges.sendServerTabMessage("arena", performer.getName() + " is beginning to capture an Arena depot!", 255, 128, 0);
+			MiscChanges.sendGlobalFreedomChat(performer, performer.getName() + " is beginning to capture an Arena depot!", 255, 128, 0);
 			lastAttemptedDepotCapture = System.currentTimeMillis();
 		}
 	}
+
 	public static void giveCacheReward(Creature performer){
 		Item inv = performer.getInventory();
-		Item enchantOrb = ItemUtil.createEnchantOrb(60f+(Math.min(Server.rand.nextFloat()*60f, Server.rand.nextFloat()*60f)));
+		Item enchantOrb = ItemUtil.createEnchantOrb(60f + (Math.min(Server.rand.nextFloat() * 60f, Server.rand.nextFloat() * 60f)));
 		if(enchantOrb != null) {
 			inv.insertItem(enchantOrb);
 		}
 		try {
-			// Add a special caches as a reward.
 			int[] cacheIds = {
 					ArmourCache.templateId,
 					ArtifactCache.templateId,
@@ -239,44 +272,35 @@ public class SupplyDepots {
 					RiftCache.templateId,
 					TreasureMapCache.templateId
 			};
-			for(int i = 3+Server.rand.nextInt(2); i > 0; --i) { // 2-3 caches
-				Item cache = ItemFactory.createItem(cacheIds[Server.rand.nextInt(cacheIds.length)], 40f+(50f*Server.rand.nextFloat()), "");
+			for(int i = 3 + Server.rand.nextInt(2); i > 0; --i) {
+				Item cache = ItemFactory.createItem(cacheIds[Server.rand.nextInt(cacheIds.length)], 40f + (50f * Server.rand.nextFloat()), "");
 				inv.insertItem(cache, true);
 			}
-			// Add kingdom tokens
-			for(int i = 3+Server.rand.nextInt(3); i > 0; --i) { // 3-5 kingdom tokens
-				Item token = ItemFactory.createItem(22765, 40f+(50f*Server.rand.nextFloat()), "");
+			for(int i = 3 + Server.rand.nextInt(3); i > 0; --i) {
+				Item token = ItemFactory.createItem(22765, 40f + (50f * Server.rand.nextFloat()), "");
 				inv.insertItem(token, true);
 			}
-			// High quality seryll
-			Item seryll = ItemFactory.createItem(ItemList.seryllBar, 80+(20*Server.rand.nextFloat()), null);
+			Item seryll = ItemFactory.createItem(ItemList.seryllBar, 80 + (20 * Server.rand.nextFloat()), null);
 			inv.insertItem(seryll, true);
-			// Sleep powder
 			Item sleepPowder = ItemFactory.createItem(ItemList.sleepPowder, 99f, null);
 			inv.insertItem(sleepPowder, true);
-			// Very low chance for a HotA statue.
-			if(Server.rand.nextFloat()*100f <= 1f){
-				Item hotaStatue = ItemFactory.createItem(ItemList.statueHota, 80f+(20f*Server.rand.nextFloat()), "");
+			if(Server.rand.nextFloat() * 100f <= 1f){
+				Item hotaStatue = ItemFactory.createItem(ItemList.statueHota, 80f + (20f * Server.rand.nextFloat()), "");
 				hotaStatue.setAuxData((byte)Server.rand.nextInt(10));
 				hotaStatue.setWeight(50000, true);
 				inv.insertItem(hotaStatue, true);
 			}
-			// Add 10-30 copper
-			long iron = 1000; // 10 copper
-			iron += Server.rand.nextInt(2000); // add up to 20 copper
+			long iron = 1000;
+			iron += Server.rand.nextInt(2000);
 			Item[] coins = Economy.getEconomy().getCoinsFor(iron);
 			for(Item coin : coins){
 				inv.insertItem(coin, true);
 			}
-			/*if(Server.rand.nextFloat()*100f <= 3f){
-				Item sorcery = ItemFactory.createItem(ItemUtil.sorceryIds[Server.rand.nextInt(ItemUtil.sorceryIds.length)], 80f+(20f*Server.rand.nextFloat()), "");
-				sorcery.setAuxData((byte)2);
-				inv.insertItem(sorcery, true);
-			}*/
 		} catch (FailedException | NoSuchTemplateException e) {
 			logger.log(Level.WARNING, "", e);
 		}
 	}
+
 	public static void preInit(){
 		try{
 			ClassPool classPool = HookManager.getInstance().getClassPool();
@@ -289,7 +313,6 @@ public class SupplyDepots {
 				Util.setReason("Add depot lights for players.");
 				replace = "mod.sin.wyvern.SupplyDepots.sendDepotEffectsToPlayer($1);";
 				Util.insertBeforeDeclared(thisClass, ctPlayers, "sendAltarsToPlayer", replace);
-				//ctPlayers.getDeclaredMethod("sendAltarsToPlayer").insertBefore("mod.sin.wyvern.SupplyDepots.sendDepotEffectsToPlayer($1);");
 			}
 		}catch (NotFoundException e) {
 			logger.log(Level.WARNING, "", e);

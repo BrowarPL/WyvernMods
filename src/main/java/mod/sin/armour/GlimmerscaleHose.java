@@ -6,57 +6,61 @@ import mod.sin.wyvern.IconzzHandler;
 import org.gotti.wurmunlimited.modsupport.ItemTemplateBuilder;
 
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class GlimmerscaleHose {
 	public static final Logger logger = Logger.getLogger(GlimmerscaleHose.class.getName());
 	public static int templateId;
-	private final String name = "glimmerscale leggings";
+	private static final String NAME = "glimmerscale leggings";
 	public void createTemplate() throws IOException{
-		/*ItemTemplateCreator.createItemTemplate(473, 3, "drake hide jacket", "drake hide jackets", "excellent", "good", "ok", "poor",
-		 * "A jacket made from the finest drake hide with brass husks.",
-		 * new short[]{108, 44, 23, 4, 99},
-		 * 1060, 1, 0, 29030400, 2, 40, 40, -10, new byte[]{2},
-		 * "model.armour.torso.dragon.", 70.0f, 600, 16, 100000, true, 9);
-		 */
-		ItemTemplateBuilder itemBuilder = new ItemTemplateBuilder("mod.item.glimmerscale.hose");
-		itemBuilder.name(name, "glimmerscale leggings", "A set of glimmerscale leggings.");
-		itemBuilder.itemTypes(new short[]{ // {108, 44, 23, 4, 99} - Drake hide jacket
-				ItemTypes.ITEM_TYPE_NAMED,
-				ItemTypes.ITEM_TYPE_REPAIRABLE,
-				ItemTypes.ITEM_TYPE_METAL,
-				ItemTypes.ITEM_TYPE_ARMOUR,
-				ItemTypes.ITEM_TYPE_DRAGONARMOUR
-		});
-		itemBuilder.imageNumber(IconzzHandler.glimmerscaleHoseId);
-		itemBuilder.behaviourType((short) 1);
-		itemBuilder.combatDamage(0);
-		itemBuilder.decayTime(Long.MAX_VALUE);
-		itemBuilder.dimensions(2, 40, 40);
-		itemBuilder.primarySkill(-10);
-		itemBuilder.bodySpaces(new byte[]{34});
-		itemBuilder.modelName("model.armour.leg.dragon.scale.leather.");
-		itemBuilder.difficulty(78.0f);
-		itemBuilder.weightGrams(3200);
-		itemBuilder.material(Materials.MATERIAL_GLIMMERSTEEL);
-		itemBuilder.value(1000000);
+		try {
+			ItemTemplateBuilder itemBuilder = new ItemTemplateBuilder("mod.item.glimmerscale.hose");
+			itemBuilder.name(NAME, "glimmerscale leggings", "A set of glimmerscale leggings.");
+			itemBuilder.itemTypes(new short[]{
+					ItemTypes.ITEM_TYPE_NAMED,
+					ItemTypes.ITEM_TYPE_REPAIRABLE,
+					ItemTypes.ITEM_TYPE_METAL,
+					ItemTypes.ITEM_TYPE_ARMOUR,
+					ItemTypes.ITEM_TYPE_DRAGONARMOUR
+			});
+			itemBuilder.imageNumber(IconzzHandler.glimmerscaleHoseId);
+			itemBuilder.behaviourType((short) 1);
+			itemBuilder.combatDamage(0);
+			itemBuilder.decayTime(Long.MAX_VALUE);
+			itemBuilder.dimensions(2, 40, 40);
+			itemBuilder.primarySkill(-10);
+			itemBuilder.bodySpaces(new byte[]{34});
+			itemBuilder.modelName("model.armour.leg.dragon.scale.leather.");
+			itemBuilder.difficulty(78.0f);
+			itemBuilder.weightGrams(3200);
+			itemBuilder.material(Materials.MATERIAL_GLIMMERSTEEL);
+			itemBuilder.value(1000000);
 
-		ItemTemplate template = itemBuilder.build();
-		templateId = template.getTemplateId();
-		logger.info(name+" TemplateID: "+templateId);
+			ItemTemplate template = itemBuilder.build();
+			if (template == null) {
+				logger.log(Level.SEVERE, "Failed to create item template for " + NAME);
+				throw new IOException("Failed to create item template for " + NAME);
+			}
+			templateId = template.getTemplateId();
+			logger.info(NAME + " TemplateID: " + templateId);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Error creating template for " + NAME, e);
+			throw e;
+		}
 	}
 	public void initCreationEntry(){
 		logger.info("initCreationEntry()");
-		if(templateId > 0){
-			logger.info("Creating "+name+" creation entry, ID = "+templateId);
-			CreationEntryCreator.createSimpleEntry(SkillList.SMITHING_ARMOUR_PLATE, ItemList.anvilLarge, Glimmerscale.templateId,
-					templateId, false, true, 0.0f, false, false, CreationCategories.ARMOUR);
-			//final AdvancedCreationEntry entry = CreationEntryCreator.createAdvancedEntry(SkillList.SMITHING_WEAPON_HEADS,
-			//		ItemList.ironBand, ItemList.shaft, templateId, false, false, 0f, true, false, CreationCategories.TOOLS);
-			//entry.addRequirement(new CreationRequirement(1, ItemList.woodenHandleSword, 2, true));
-			//entry.addRequirement(new CreationRequirement(2, ItemList.nailsIronSmall, 1, true));
+		if(templateId > 0 && Glimmerscale.templateId > 0){
+			try {
+				logger.info("Creating " + NAME + " creation entry, ID = " + templateId);
+				CreationEntryCreator.createSimpleEntry(SkillList.SMITHING_ARMOUR_PLATE, ItemList.anvilLarge, Glimmerscale.templateId,
+						templateId, false, true, 0.0f, false, false, CreationCategories.ARMOUR);
+			} catch (Exception e) {
+				logger.log(Level.SEVERE, "Error creating creation entry for " + NAME, e);
+			}
 		}else{
-			logger.info(name+" does not have a template ID on creation entry.");
+			logger.log(Level.SEVERE, NAME + " or Glimmerscale does not have a valid template ID on creation entry.");
 		}
 	}
 }

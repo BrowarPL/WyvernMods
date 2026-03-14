@@ -17,27 +17,41 @@ public class AchievementChanges {
     public static ArrayList<Integer> blacklist = new ArrayList<>();
 
     protected static int getNumber(String name){
+        if (name == null) {
+            return -1;
+        }
         AchievementTemplate temp = Achievement.getTemplate(name);
-        if(temp != null){
+        if (temp != null) {
             return temp.getNumber();
         }
         return -1;
     }
 
     protected static void blacklist(String name){
-        blacklist.add(getNumber(name));
+        if (name != null) {
+            int number = getNumber(name);
+            if (number != -1) {
+                blacklist.add(number);
+            }
+        }
     }
     protected static void blacklist(int number){
-        blacklist.add(number);
+        if (number >= 0) {
+            blacklist.add(number);
+        }
     }
 
     private static AchievementTemplate addAchievement(int id, String name, String description, String requirement, boolean isInvisible, int triggerOn, byte achievementType, boolean playUpdateSound, boolean isOneTimer) {
+        if (name == null || description == null || requirement == null) {
+            logger.warning("Cannot add achievement: name, description, or requirement is null");
+            return null;
+        }
         AchievementTemplate ach = new AchievementTemplate(id, name, isInvisible, triggerOn, achievementType, playUpdateSound, isOneTimer, requirement);
         ach.setDescription(description);
         try {
             ReflectionUtil.callPrivateMethod(null, ReflectionUtil.getMethod(Achievement.class, "addTemplate", new Class<?>[]{AchievementTemplate.class}), ach);
         } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            logger.log(Level.WARNING, "", e);
+            logger.log(Level.WARNING, "Error adding achievement template: " + name, e);
         }
         return ach;
     }
@@ -160,18 +174,24 @@ public class AchievementChanges {
     }
 
     protected static void setRequirement(AchievementTemplate temp, String req){
+        if (temp == null || req == null) {
+            return;
+        }
         try {
             ReflectionUtil.setPrivateField(temp, ReflectionUtil.getField(temp.getClass(), "requirement"), req);
         } catch (IllegalAccessException | NoSuchFieldException e) {
-            logger.log(Level.WARNING, "", e);
+            logger.log(Level.WARNING, "Error setting requirement for achievement", e);
         }
     }
 
     protected static void addRequirements(AchievementTemplate temp){
-        if(temp.getName().equals("Meoww!")){
+        if (temp == null || temp.getName() == null) {
+            return;
+        }
+        if (temp.getName().equals("Meoww!")) {
             setRequirement(temp, "Kill a Wild Cat");
         }
-        if(temp.getName().equals("Treasure Hunter")){
+        if (temp.getName().equals("Treasure Hunter")) {
             setRequirement(temp, "Open a treasure chest");
         }
         if(temp.getName().equals("Mercykiller")){
@@ -243,10 +263,13 @@ public class AchievementChanges {
     }
 
     protected static void fixName(AchievementTemplate temp){
-        if(temp.getName().contains("Invisible:")){
+        if (temp == null || temp.getName() == null) {
+            return;
+        }
+        if (temp.getName().contains("Invisible:")) {
             temp.setName(temp.getName().replaceAll("Invisible:", ""));
         }
-        if(temp.getName().equals("PlayerkillBow")){
+        if (temp.getName().equals("PlayerkillBow")) {
             temp.setName("Arrow To The Knee");
         }
         if(temp.getName().equals("PlayerkillSword")){
@@ -308,19 +331,26 @@ public class AchievementChanges {
     public static void onServerStarted(){
         try {
             ConcurrentHashMap<Integer, AchievementTemplate> templates = ReflectionUtil.getPrivateField(Achievement.class, ReflectionUtil.getField(Achievement.class, "templates"));
+            if (templates == null) {
+                logger.warning("Achievement templates map is null, cannot load achievements");
+                return;
+            }
             generateBlacklist();
-            for(int i : templates.keySet()){
+            for (int i : templates.keySet()) {
                 AchievementTemplate temp = templates.get(i);
+                if (temp == null) {
+                    continue;
+                }
                 addRequirements(temp);
-                if(temp.getRequirement() != null && !temp.getRequirement().equals("") && !temp.isForCooking() && !blacklist.contains(i)){
+                if (temp.getRequirement() != null && !temp.getRequirement().equals("") && !temp.isForCooking() && !blacklist.contains(i)) {
                     fixName(temp);
                     goodAchievements.put(i, temp);
-                    logger.info(temp.getNumber()+": "+temp.getName()+" - "+temp.getDescription()+" ("+temp.getRequirement()+")");
+                    logger.info(temp.getNumber() + ": " + temp.getName() + " - " + temp.getDescription() + " (" + temp.getRequirement() + ")");
                 }
             }
-            logger.info("Total achievements loaded into system: "+goodAchievements.size());
+            logger.info("Total achievements loaded into system: " + goodAchievements.size());
         } catch (IllegalAccessException | NoSuchFieldException e) {
-            logger.log(Level.WARNING, "", e);
+            logger.log(Level.WARNING, "Error loading achievement templates", e);
         }
     }
 }

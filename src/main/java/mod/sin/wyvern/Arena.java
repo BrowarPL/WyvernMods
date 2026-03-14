@@ -26,6 +26,7 @@ import org.gotti.wurmunlimited.modloader.classhooks.HookException;
 import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
 import org.nyxcode.wurm.discordrelay.DiscordRelay;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Arena {
@@ -43,7 +44,7 @@ public class Arena {
         if (player.opponent == aTarget) {
             return 2;
         }
-        if (player.getSaveFile().pet != -10 && aTarget.getWurmId() == player.getSaveFile().pet) {
+        if (player.getSaveFile() != null && player.getSaveFile().pet != -10 && aTarget.getWurmId() == player.getSaveFile().pet) {
             return 1;
         }
         if (aTarget.getDominator() != null && aTarget.getDominator() != player) {
@@ -90,9 +91,9 @@ public class Arena {
         DiscordRelay.sendToDiscord("arena", message, true);
     }
     public static void createNewHotaPrize(Village v, int winStreak){
+        Item lump = null;
+        int x;
         try {
-            Item lump;
-            int x;
             Item statue = ItemFactory.createItem(ItemList.statueHota, 99.0f, null);
             byte material = Materials.MATERIAL_GOLD;
             if (winStreak > 30) {
@@ -184,14 +185,17 @@ public class Arena {
                 statue.insertItem(coin, true);
             }
             z.addItem(statue);
-        }
-        catch (Exception ex) {
-            logger.warning(ex.getMessage());
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Error creating HotA prize", ex);
         }
     }
     public static void respawnPlayer(Creature player, ServerEntry server){
+        if (server == null || server.serverWest == null) {
+            logger.warning("Cannot respawn player: server or serverWest is null");
+            return;
+        }
         ServerEntry targetserver = server.serverWest;
-        if(player instanceof Player){
+        if (player instanceof Player) {
             Player p = (Player) player;
             int tilex = targetserver.SPAWNPOINTJENNX;
             int tiley = targetserver.SPAWNPOINTJENNY;
@@ -798,7 +802,7 @@ public class Arena {
             }
 
 
-        }catch (NotFoundException e) {
+        } catch (NotFoundException e) {
             throw new HookException(e);
         }
     }

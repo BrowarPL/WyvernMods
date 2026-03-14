@@ -17,6 +17,7 @@ import org.gotti.wurmunlimited.modsupport.actions.ModActions;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class AffinityCatcherCaptureAction implements ModAction {
@@ -33,19 +34,23 @@ public class AffinityCatcherCaptureAction implements ModAction {
 			actionId,
 			"Capture affinity",
 			"capturing",
-			new int[] { 0 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
+			new int[] { 0 }
 		);
 		ModActions.registerAction(actionEntry);
 	}
 	public static boolean hasAffinityCatcher(Creature performer){
-		//logger.info("Checking if creature has affinity catcher.");
-		for(Item i : performer.getInventory().getItems()){
+		if(performer.getInventory() == null){
+			return false;
+		}
+		Set<Item> items = performer.getInventory().getItems();
+		if(items == null){
+			return false;
+		}
+		for(Item i : items){
 			if(i.getTemplateId() == AffinityCatcher.templateId){
-				//logger.info("Has affinity catcher.");
 				return true;
 			}
 		}
-		//logger.info("No affinity catcher found.");
 		return false;
 	}
 	@Override

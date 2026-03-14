@@ -1,6 +1,7 @@
 package mod.sin.items;
 
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.gotti.wurmunlimited.modsupport.ItemTemplateBuilder;
@@ -13,32 +14,41 @@ import com.wurmonline.server.items.Materials;
 public class AffinityOrb {
 	public static final Logger logger = Logger.getLogger(AffinityOrb.class.getName());
 	public static int templateId;
+	private static final String NAME = "affinity orb";
 
-	public void createTemplate() throws IOException{
-		String name = "affinity orb";
-		ItemTemplateBuilder itemBuilder = new ItemTemplateBuilder("wyvern.affinityorb");
-		itemBuilder.name(name, "affinity orbs", "A valuable orb that infuses the user with hidden knowledge.");
-		itemBuilder.descriptions("brilliantly glowing", "strongly glowing", "faintly glowing", "barely glowing");
-		itemBuilder.itemTypes(new short[]{
-				ItemTypes.ITEM_TYPE_FULLPRICE,
-				ItemTypes.ITEM_TYPE_NOSELLBACK
-		});
-		itemBuilder.imageNumber((short) 919);
-		itemBuilder.behaviourType((short) 1);
-		itemBuilder.combatDamage(0);
-		itemBuilder.decayTime(Long.MAX_VALUE);
-		itemBuilder.dimensions(1, 1, 1);
-		itemBuilder.primarySkill((int) MiscConstants.NOID);
-		itemBuilder.bodySpaces(MiscConstants.EMPTY_BYTE_PRIMITIVE_ARRAY);
-		itemBuilder.modelName("model.artifact.orbdoom");
-		itemBuilder.difficulty(5.0f);
-		itemBuilder.weightGrams(500);
-		itemBuilder.material(Materials.MATERIAL_CRYSTAL);
-		itemBuilder.value(500000);
-		itemBuilder.isTraded(true);
+	public void createTemplate() throws IOException {
+		try {
+			ItemTemplateBuilder itemBuilder = new ItemTemplateBuilder("wyvern.affinityorb");
+			itemBuilder.name(NAME, "affinity orbs", "A valuable orb that infuses the user with hidden knowledge.");
+			itemBuilder.descriptions("brilliantly glowing", "strongly glowing", "faintly glowing", "barely glowing");
+			itemBuilder.itemTypes(new short[]{
+					ItemTypes.ITEM_TYPE_FULLPRICE,
+					ItemTypes.ITEM_TYPE_NOSELLBACK
+			});
+			itemBuilder.imageNumber((short) 919);
+			itemBuilder.behaviourType((short) 1);
+			itemBuilder.combatDamage(0);
+			itemBuilder.decayTime(Long.MAX_VALUE);
+			itemBuilder.dimensions(1, 1, 1);
+			itemBuilder.primarySkill((int) MiscConstants.NOID);
+			itemBuilder.bodySpaces(MiscConstants.EMPTY_BYTE_PRIMITIVE_ARRAY);
+			itemBuilder.modelName("model.artifact.orbdoom");
+			itemBuilder.difficulty(5.0f);
+			itemBuilder.weightGrams(500);
+			itemBuilder.material(Materials.MATERIAL_CRYSTAL);
+			itemBuilder.value(500000);
+			itemBuilder.isTraded(true);
 
-		ItemTemplate template = itemBuilder.build();
-		templateId = template.getTemplateId();
-		logger.info(name+" TemplateID: "+templateId);
+			ItemTemplate template = itemBuilder.build();
+			if (template != null) {
+				templateId = template.getTemplateId();
+				logger.info(NAME + " TemplateID: " + templateId);
+			} else {
+				logger.warning("Failed to create " + NAME + " template: build returned null");
+			}
+		} catch (Exception e) {
+			logger.log(Level.SEVERE, "Error creating " + NAME + " template", e);
+			throw new IOException("Failed to create " + NAME + " template", e);
+		}
 	}
 }

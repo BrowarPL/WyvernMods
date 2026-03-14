@@ -16,43 +16,31 @@ import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MountedChanges {
+    public static final Logger logger = Logger.getLogger(MountedChanges.class.getName());
+
+    private static void addShoeIfPresent(Creature creature, byte bodyPart, ArrayList<Item> gear) {
+        try {
+            Item item = creature.getEquippedItem(bodyPart);
+            if (item != null) {
+                item.setDamage(item.getDamage() + (item.getDamageModifier() * 0.002f));
+                gear.add(item);
+            }
+        } catch (NoSpaceException ignored) {
+        }
+    }
+
     public static float newCalcHorseShoeBonus(Creature creature){
         float factor = 1.0f;
         ArrayList<Item> gear = new ArrayList<>();
-        try {
-            Item leftFoot = creature.getEquippedItem(BodyPartConstants.LEFT_FOOT);
-            if (leftFoot != null) {
-                leftFoot.setDamage(leftFoot.getDamage() + (leftFoot.getDamageModifier() * 0.002f));
-                gear.add(leftFoot);
-            }
-        } catch (NoSpaceException ignored) {
-        }
-        try {
-            Item rightFoot = creature.getEquippedItem(BodyPartConstants.RIGHT_FOOT);
-            if (rightFoot != null) {
-                rightFoot.setDamage(rightFoot.getDamage() + (rightFoot.getDamageModifier() * 0.002f));
-                gear.add(rightFoot);
-            }
-        } catch (NoSpaceException ignored) {
-        }
-        try {
-            Item leftHand = creature.getEquippedItem(BodyPartConstants.LEFT_HAND);
-            if (leftHand != null) {
-                leftHand.setDamage(leftHand.getDamage() + (leftHand.getDamageModifier() * 0.002f));
-                gear.add(leftHand);
-            }
-        } catch (NoSpaceException ignored) {
-        }
-        try {
-            Item rightHand = creature.getEquippedItem(BodyPartConstants.RIGHT_HAND);
-            if (rightHand != null) {
-                rightHand.setDamage(rightHand.getDamage() + (rightHand.getDamageModifier() * 0.002f));
-                gear.add(rightHand);
-            }
-        } catch (NoSpaceException ignored) {
-        }
+
+        addShoeIfPresent(creature, BodyPartConstants.LEFT_FOOT, gear);
+        addShoeIfPresent(creature, BodyPartConstants.RIGHT_FOOT, gear);
+        addShoeIfPresent(creature, BodyPartConstants.LEFT_HAND, gear);
+        addShoeIfPresent(creature, BodyPartConstants.RIGHT_HAND, gear);
+
         for(Item shoe : gear){
             factor += Math.max(10f, shoe.getCurrentQualityLevel()) / 2000f;
             factor += shoe.getSpellSpeedBonus() / 2000f;
@@ -60,43 +48,37 @@ public class MountedChanges {
         }
         return factor;
     }
+
     public static float newMountSpeedMultiplier(Creature creature, boolean mounting){
-        float hunger = creature.getStatus().getHunger()/65535f;
-        float damage = creature.getStatus().damage/65535f;
-        float factor = ((((1f-damage*damage)*(1f-damage)+(1f-2f*damage)*damage)*(1f-damage)+(1f-damage)*damage)*(1f-0.4f*hunger*hunger));
+        if (creature == null || creature.getStatus() == null) {
+            return 1.0f;
+        }
+
+        float hunger = creature.getStatus().getHunger() / 65535f;
+        float damage = creature.getStatus().damage / 65535f;
+        float factor = ((((1f - damage * damage) * (1f - damage) + (1f - 2f * damage) * damage) * (1f - damage) + (1f - damage) * damage) * (1f - 0.4f * hunger * hunger));
+
         try {
             float traitMove = ReflectionUtil.callPrivateMethod(creature, ReflectionUtil.getMethod(creature.getClass(), "getTraitMovePercent"), mounting);
             factor += traitMove;
         } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             WyvernMods.logger.log(Level.WARNING, "", e);
         }
+
         if(creature.isHorse() || creature.isUnicorn()) {
             factor *= newCalcHorseShoeBonus(creature);
         }
-        /*if(creature.isHorse()){
-            try {
-                Item barding = creature.getArmour(BodyPartConstants.TORSO);
-                if(barding != null){
-                    if(barding.getTemplateId() == ItemList.clothBarding){
-                        factor *= 0.9f;
-                    }else if(barding.getTemplateId() == ItemList.leatherBarding){
-                        factor *= 0.82f;
-                    }else if(barding.getTemplateId() == ItemList.chainBarding){
-                        factor *= 0.75f;
-                    }
-                }
-            } catch (NoArmourException | NoSpaceException ignored) {
-            }
-        }*/
+
         if (creature.getBonusForSpellEffect(Enchants.CRET_OAKSHELL) > 0.0f) {
             factor *= 1f - (0.3f * (creature.getBonusForSpellEffect(Enchants.CRET_OAKSHELL) / 100.0f));
         }
+
         if(creature.isRidden()){
             try {
-                float saddleFactor = 1.0f;
                 Item saddle = creature.getEquippedItem(BodyPartConstants.TORSO);
                 if(saddle != null) {
-                    saddle.setDamage(saddle.getDamage()+(saddle.getDamageModifier()*0.001f));
+                    saddle.setDamage(saddle.getDamage() + (saddle.getDamageModifier() * 0.001f));
+                    float saddleFactor = 1.0f;
                     saddleFactor += Math.max(10f, saddle.getCurrentQualityLevel()) / 2000f;
                     saddleFactor += saddle.getSpellSpeedBonus() / 2000f;
                     saddleFactor += saddle.getRarity() * 0.03f;
@@ -104,10 +86,13 @@ public class MountedChanges {
                 }
             } catch (NoSpaceException ignored) {
             }
-            factor *= creature.getMovementScheme().getSpeedModifier();
+            if (creature.getMovementScheme() != null) {
+                factor *= creature.getMovementScheme().getSpeedModifier();
+            }
         }
         return factor;
     }
+
     public static void preInit(){
         try{
             ClassPool classPool = HookManager.getInstance().getClassPool();
@@ -127,7 +112,7 @@ public class MountedChanges {
                 replace = "forceMountSpeedChange();";
                 Util.insertBeforeDeclared(thisClass, ctCreature, "setWounded", replace);
             }
-        } catch ( NotFoundException | IllegalArgumentException | ClassCastException e) {
+        } catch (NotFoundException | IllegalArgumentException | ClassCastException e) {
             throw new HookException(e);
         }
     }

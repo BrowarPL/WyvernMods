@@ -30,7 +30,7 @@ public class LeaderboardSkillAction implements ModAction {
 			actionId,
 			"Open leaderboard",
 			"opening",
-			new int[] { 0 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
+			new int[] { 0 }
 		);
 		ModActions.registerAction(actionEntry);
 	}

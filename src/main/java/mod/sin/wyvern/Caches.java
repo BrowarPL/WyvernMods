@@ -5,12 +5,29 @@ import com.wurmonline.server.FailedException;
 import com.wurmonline.server.MiscConstants;
 import com.wurmonline.server.Server;
 import com.wurmonline.server.creatures.Creature;
-import com.wurmonline.server.items.*;
+import com.wurmonline.server.items.Item;
+import com.wurmonline.server.items.ItemFactory;
+import com.wurmonline.server.items.ItemList;
+import com.wurmonline.server.items.Materials;
+import com.wurmonline.server.items.NoSuchTemplateException;
+import com.wurmonline.server.items.WurmColor;
 import com.wurmonline.shared.constants.Enchants;
 import mod.sin.actions.items.TreasureCacheOpenAction;
 import mod.sin.items.ChaosCrystal;
 import mod.sin.items.EnchantersCrystal;
-import mod.sin.items.caches.*;
+import mod.sin.items.caches.AnimalCache;
+import mod.sin.items.caches.ArmourCache;
+import mod.sin.items.caches.ArtifactCache;
+import mod.sin.items.caches.CrystalCache;
+import mod.sin.items.caches.DragonCache;
+import mod.sin.items.caches.GemCache;
+import mod.sin.items.caches.MoonCache;
+import mod.sin.items.caches.PotionCache;
+import mod.sin.items.caches.RiftCache;
+import mod.sin.items.caches.TitanCache;
+import mod.sin.items.caches.ToolCache;
+import mod.sin.items.caches.TreasureMapCache;
+import mod.sin.items.caches.WeaponCache;
 import mod.sin.weapons.BattleYoyo;
 import mod.sin.weapons.Club;
 import mod.sin.weapons.Knuckles;
@@ -45,37 +62,46 @@ public class Caches {
 	public static float minimumQuality = 10f;
 
 	public static boolean isTreasureCache(Item item){
-		int templateId = item.getTemplateId();
-		return CACHE_IDS.contains(templateId);
+		return item != null && CACHE_IDS.contains(item.getTemplateId());
 	}
+
 	public static float getBaseQuality(float quality){
-		return quality*0.25f;
+		return quality * 0.25f;
 	}
+
 	public static float getRandomQuality(float quality){
-		return quality*0.6f;
+		return quality * 0.6f;
 	}
+
 	public static float getWeightMultiplier(int templateId, float quality){
 		if(templateId == DragonCache.templateId){
-			return 0.005f+(quality*0.0005f)+(quality*0.0001f*Server.rand.nextFloat());
+			return 0.005f + (quality * 0.0005f) + (quality * 0.0001f * Server.rand.nextFloat());
 		}else if(templateId == MoonCache.templateId){
-			return 1f+(quality*0.005f)+(quality*0.005f*Server.rand.nextFloat());
+			return 1f + (quality * 0.005f) + (quality * 0.005f * Server.rand.nextFloat());
 		}
-		return 1f+(quality*0.002f);
+		return 1f + (quality * 0.002f);
 	}
+
 	public static boolean adjustBasicWeight(int templateId){
 		return templateId == DragonCache.templateId
 				|| templateId == MoonCache.templateId;
 	}
+
 	public static boolean createsCustomBasic(int templateId){
 		return templateId == TitanCache.templateId
 				|| templateId == TreasureMapCache.templateId;
 	}
+
 	public static void getCustomBasic(Creature performer, Item cache){
+		if (performer == null || cache == null) {
+			return;
+		}
+
 		int templateId = cache.getTemplateId();
 		if(templateId == TitanCache.templateId){
 			Item efficiencyTool = ItemUtil.createRandomToolWeapon(20f, 40f, cache.getCreatorName());
 			if(efficiencyTool != null) {
-				ItemUtil.applyEnchant(efficiencyTool, (byte) 120, 40f + (20f * Server.rand.nextFloat())); // Titanforged enchant is 120
+				ItemUtil.applyEnchant(efficiencyTool, (byte) 120, 40f + (20f * Server.rand.nextFloat()));
 				if(efficiencyTool.isMetal()){
 					efficiencyTool.setMaterial(Server.rand.nextBoolean() ? Materials.MATERIAL_ADAMANTINE : Materials.MATERIAL_GLIMMERSTEEL);
 				}else if(efficiencyTool.isWood()){
@@ -85,10 +111,13 @@ public class Caches {
 			}
 		}else if(templateId == TreasureMapCache.templateId){
 			Item map = Treasuremap.CreateTreasuremap(performer, cache, null, null, true);
-			map.setRarity(cache.getRarity());
-			performer.getInventory().insertItem(map, true);
+			if (map != null) {
+				map.setRarity(cache.getRarity());
+				performer.getInventory().insertItem(map, true);
+			}
 		}
 	}
+
 	public static int[] getBasicTemplates(int templateId){
 		if(templateId == ArmourCache.templateId){
 			return new int[]{
@@ -118,7 +147,6 @@ public class Caches {
 					ItemList.drakeHide,
 					ItemList.dragonScale,
 					ItemList.dragonScale
-					//SpectralHide.templateId
 			};
 		}else if(templateId == GemCache.templateId){
 			return new int[]{
@@ -194,7 +222,12 @@ public class Caches {
 		}
 		return null;
 	}
+
 	public static void adjustBasicItem(int templateId, float quality, Item item){
+		if (item == null) {
+			return;
+		}
+
 		if(templateId == ArmourCache.templateId){
 			if(Server.rand.nextInt(800) < quality){
 				if(item.getRarity() == 0){
@@ -207,14 +240,14 @@ public class Caches {
 			}
 			if(quality > 50){
 				if(quality > 95 && Server.rand.nextBoolean()){
-					ItemUtil.applyEnchant(item, Enchants.BUFF_SHARED_PAIN, quality*Server.rand.nextFloat()*0.7f);
-					ItemUtil.applyEnchant(item, Enchants.BUFF_WEBARMOUR, quality*Server.rand.nextFloat()*0.7f);
+					ItemUtil.applyEnchant(item, Enchants.BUFF_SHARED_PAIN, quality * Server.rand.nextFloat() * 0.7f);
+					ItemUtil.applyEnchant(item, Enchants.BUFF_WEBARMOUR, quality * Server.rand.nextFloat() * 0.7f);
 				}else if(Server.rand.nextBoolean()){
 					byte[] armourEnchants = {
 							Enchants.BUFF_SHARED_PAIN,
 							Enchants.BUFF_WEBARMOUR
 					};
-					ItemUtil.applyEnchant(item, armourEnchants[Server.rand.nextInt(armourEnchants.length)], quality*Server.rand.nextFloat()*1.5f);
+					ItemUtil.applyEnchant(item, armourEnchants[Server.rand.nextInt(armourEnchants.length)], quality * Server.rand.nextFloat() * 1.5f);
 				}
 			}
 			if(quality > 80 && Server.rand.nextInt(4) == 0){
@@ -258,10 +291,10 @@ public class Caches {
 						Enchants.BUFF_WIND_OF_AGES,
 						Enchants.BUFF_BLESSINGDARK
 				};
-				ItemUtil.applyEnchant(item, enchants[Server.rand.nextInt(enchants.length)], quality*0.5f+(quality*0.5f*Server.rand.nextFloat()));
-				ItemUtil.applyEnchant(item, Enchants.BUFF_NIMBLENESS, quality*0.3f+(quality*0.7f*Server.rand.nextFloat()));
+				ItemUtil.applyEnchant(item, enchants[Server.rand.nextInt(enchants.length)], quality * 0.5f + (quality * 0.5f * Server.rand.nextFloat()));
+				ItemUtil.applyEnchant(item, Enchants.BUFF_NIMBLENESS, quality * 0.3f + (quality * 0.7f * Server.rand.nextFloat()));
 			}else if(quality > 30){
-				ItemUtil.applyEnchant(item, Enchants.BUFF_LIFETRANSFER, quality*0.6f+(quality*0.6f*Server.rand.nextFloat()));
+				ItemUtil.applyEnchant(item, Enchants.BUFF_LIFETRANSFER, quality * 0.6f + (quality * 0.6f * Server.rand.nextFloat()));
 			}
 		}else if(templateId == CrystalCache.templateId){
 			if(Server.rand.nextInt(500) < quality){
@@ -294,47 +327,49 @@ public class Caches {
 				}
 			}
 			if(Server.rand.nextInt(200) < quality){
-				byte rune = (byte) (Server.rand.nextInt(78)-128);
+				byte rune = (byte) (Server.rand.nextInt(78) - 128);
 				if(!ItemUtil.isSingleUseRune(rune)){
 					ItemUtil.applyEnchant(item, rune, 50);
 				}
 			}
 			if(quality > 30 && Server.rand.nextInt(250) < quality){
-				ItemUtil.applyEnchant(item, Enchants.BUFF_WIND_OF_AGES, quality*0.6f+(quality*0.6f*Server.rand.nextFloat()));
+				ItemUtil.applyEnchant(item, Enchants.BUFF_WIND_OF_AGES, quality * 0.6f + (quality * 0.6f * Server.rand.nextFloat()));
 			}
 			if(quality > 30 && Server.rand.nextInt(250) < quality){
-				ItemUtil.applyEnchant(item, Enchants.BUFF_CIRCLE_CUNNING, quality*0.6f+(quality*0.6f*Server.rand.nextFloat()));
+				ItemUtil.applyEnchant(item, Enchants.BUFF_CIRCLE_CUNNING, quality * 0.6f + (quality * 0.6f * Server.rand.nextFloat()));
 			}
-			if(quality > 50 && Server.rand.nextInt(250) < quality){ // Efficiency
-				ItemUtil.applyEnchant(item, (byte) 114, quality*0.6f+(quality*0.6f*Server.rand.nextFloat()));
+			if(quality > 50 && Server.rand.nextInt(250) < quality){
+				ItemUtil.applyEnchant(item, (byte) 114, quality * 0.6f + (quality * 0.6f * Server.rand.nextFloat()));
 			}
 			if(quality > 70 && Server.rand.nextInt(350) < quality){
-				ItemUtil.applyEnchant(item, Enchants.BUFF_BLESSINGDARK, quality*0.6f+(quality*0.6f*Server.rand.nextFloat()));
+				ItemUtil.applyEnchant(item, Enchants.BUFF_BLESSINGDARK, quality * 0.6f + (quality * 0.6f * Server.rand.nextFloat()));
 			}
-			if(quality > 90 && Server.rand.nextInt(5000) < quality){ // Titanforged
-				ItemUtil.applyEnchant(item, (byte) 120, quality*0.2f+(quality*0.2f*Server.rand.nextFloat()));
+			if(quality > 90 && Server.rand.nextInt(5000) < quality){
+				ItemUtil.applyEnchant(item, (byte) 120, quality * 0.2f + (quality * 0.2f * Server.rand.nextFloat()));
 			}
 		}
 	}
+
 	public static int getBasicNums(int templateId){
 		if(templateId == CrystalCache.templateId){
-			return Server.rand.nextInt(5)+8;
+			return Server.rand.nextInt(5) + 8;
 		}else if(templateId == GemCache.templateId){
 			return 2;
 		}
 		return 1;
 	}
+
 	public static int getExtraBasicNums(int templateId, float quality){
 		if(templateId == ArmourCache.templateId){
 			return Server.rand.nextInt(2);
 		}else if(templateId == CrystalCache.templateId){
-			return Server.rand.nextInt(Math.max((int) (quality*0.08f), 2));
+			return Server.rand.nextInt(Math.max((int) (quality * 0.08f), 2));
 		}else if(templateId == DragonCache.templateId){
 			if(Server.rand.nextInt(200) <= quality){
 				return 1;
 			}
 		}else if(templateId == GemCache.templateId){
-			return Server.rand.nextInt(Math.max((int) (quality*0.03f), 2));
+			return Server.rand.nextInt(Math.max((int) (quality * 0.03f), 2));
 		}else if(templateId == PotionCache.templateId){
 			if(Server.rand.nextInt(300) <= quality){
 				return 1;
@@ -348,10 +383,9 @@ public class Caches {
 		}
 		return 0;
 	}
+
 	public static int getExtraItemChance(int templateId){
-		/*if(templateId == ArmourCache.templateId){
-			return 1600;
-		}else*/ if(templateId == DragonCache.templateId){
+		if(templateId == DragonCache.templateId){
 			return 500;
 		}else if(templateId == GemCache.templateId){
 			return 150;
@@ -360,23 +394,9 @@ public class Caches {
 		}
 		return -1;
 	}
+
 	public static int[] getExtraTemplates(int templateId){
-		/*if(templateId == ArmourCache.templateId){
-			return new int[]{
-					GlimmerscaleBoot.templateId,
-					GlimmerscaleGlove.templateId,
-					GlimmerscaleHelmet.templateId,
-					GlimmerscaleHose.templateId,
-					GlimmerscaleSleeve.templateId,
-					GlimmerscaleVest.templateId,
-					SpectralBoot.templateId,
-					SpectralCap.templateId,
-					SpectralGlove.templateId,
-					SpectralHose.templateId,
-					SpectralJacket.templateId,
-					SpectralSleeve.templateId
-			};
-		}else*/ if(templateId == DragonCache.templateId){
+		if(templateId == DragonCache.templateId){
 			return new int[]{
 					ItemList.dragonLeatherBoot,
 					ItemList.dragonLeatherCap,
@@ -418,7 +438,12 @@ public class Caches {
 		}
 		return null;
 	}
+
 	public static void adjustExtraItem(int templateId, Item item){
+		if (item == null) {
+			return;
+		}
+
 		if(templateId == ArmourCache.templateId){
 			item.setColor(WurmColor.createColor(100, 100, 100));
 		}else if(templateId == DragonCache.templateId){
@@ -427,18 +452,24 @@ public class Caches {
 			item.setMaterial(Server.rand.nextBoolean() ? Materials.MATERIAL_ADAMANTINE : Materials.MATERIAL_GLIMMERSTEEL);
 		}
 	}
+
 	public static void openCache(Creature performer, Item cache){
+		if (performer == null || cache == null) {
+			return;
+		}
+
 		int templateId = cache.getTemplateId();
 		Item inv = performer.getInventory();
 		float quality = cache.getCurrentQualityLevel();
 		float baseQL = getBaseQuality(quality);
 		float randQL = getRandomQuality(quality);
+
 		if(createsCustomBasic(templateId)){
 			getCustomBasic(performer, cache);
 		}else{
 			int[] basicTemplates = getBasicTemplates(templateId);
 			if(basicTemplates == null){
-				logger.warning("Error: Basic Templates are null for cache with template id "+templateId);
+				logger.warning("Error: Basic Templates are null for cache with template id " + templateId);
 				return;
 			}
 			int basicNums = getBasicNums(templateId);
@@ -446,8 +477,8 @@ public class Caches {
 			int i = 0;
 			while(i < basicNums){
 				try {
-					float basicQuality = Math.max(baseQL+(randQL*Server.rand.nextFloat()), baseQL+(randQL*Server.rand.nextFloat()));
-					basicQuality = Math.min(minimumQuality+basicQuality, 100f);
+					float basicQuality = Math.max(baseQL + (randQL * Server.rand.nextFloat()), baseQL + (randQL * Server.rand.nextFloat()));
+					basicQuality = Math.min(minimumQuality + basicQuality, 100f);
 					Item basicItem = ItemFactory.createItem(basicTemplates[Server.rand.nextInt(basicTemplates.length)], basicQuality, "");
 					if(cache.getRarity() > basicItem.getRarity()) {
 						basicItem.setRarity(cache.getRarity());
@@ -455,22 +486,23 @@ public class Caches {
 					adjustBasicItem(templateId, quality, basicItem);
 					if(adjustBasicWeight(templateId)){
 						float weightMult = getWeightMultiplier(templateId, quality);
-						basicItem.setWeight((int) (basicItem.getWeightGrams()*weightMult), true);
+						basicItem.setWeight((int) (basicItem.getWeightGrams() * weightMult), true);
 					}
 					inv.insertItem(basicItem, true);
 				} catch (FailedException | NoSuchTemplateException e) {
-					logger.log(Level.WARNING, "Error: Failed to create item for cache with template id "+templateId, e);
+					logger.log(Level.WARNING, "Error: Failed to create item for cache with template id " + templateId, e);
 				}
 				++i;
 			}
 		}
+
 		int chance = getExtraItemChance(templateId);
 		if(chance > 0 && Server.rand.nextInt(chance) <= quality){
 			try {
 				int[] extraTemplates = getExtraTemplates(templateId);
 				if(extraTemplates != null){
-					float extraQuality = Math.max(baseQL+(randQL*Server.rand.nextFloat()), baseQL+(randQL*Server.rand.nextFloat()));
-					extraQuality = Math.min(minimumQuality+extraQuality, 100f);
+					float extraQuality = Math.max(baseQL + (randQL * Server.rand.nextFloat()), baseQL + (randQL * Server.rand.nextFloat()));
+					extraQuality = Math.min(minimumQuality + extraQuality, 100f);
 					Item extraItem = ItemFactory.createItem(extraTemplates[Server.rand.nextInt(extraTemplates.length)], extraQuality, "");
 					if(cache.getRarity() > extraItem.getRarity()) {
 						extraItem.setRarity(cache.getRarity());
@@ -479,14 +511,14 @@ public class Caches {
 					inv.insertItem(extraItem, true);
 				}
 			} catch (FailedException | NoSuchTemplateException e) {
-				logger.log(Level.WARNING, "Error: Failed to create item for cache with template id "+templateId, e);
+				logger.log(Level.WARNING, "Error: Failed to create item for cache with template id " + templateId, e);
 			}
 		}
 	}
+
 	public static void createItems(){
 		try {
 			ANIMAL_CACHE.createTemplate();
-			//CACHE_IDS.add(AnimalCache.templateId);
 			ARMOUR_CACHE.createTemplate();
 			CACHE_IDS.add(ArmourCache.templateId);
 			ARTIFACT_CACHE.createTemplate();
@@ -510,11 +542,11 @@ public class Caches {
 			TREASUREMAP_CACHE.createTemplate();
 			CACHE_IDS.add(TreasureMapCache.templateId);
 			WEAPON_CACHE.createTemplate();
-			//CACHE_IDS.add(WeaponCache.templateId);
 		} catch (IOException e) {
 			logger.log(Level.WARNING, "", e);
 		}
 	}
+
 	public static void registerActions(){
 		ModActions.registerAction(new TreasureCacheOpenAction());
 	}

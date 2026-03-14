@@ -5,70 +5,92 @@ import com.wurmonline.server.TimeConstants;
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.creatures.Creatures;
 import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.NotFoundException;
+import javassist.bytecode.Descriptor;
+import mod.sin.lib.Util;
 import org.gotti.wurmunlimited.modloader.classhooks.HookException;
 import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.logging.Logger;
 
+@SuppressWarnings("unused")
 public class Bloodlust {
     public static final Logger logger = Logger.getLogger(Bloodlust.class.getName());
-    protected static HashMap<Long,Float> lusts = new HashMap<>();
-    protected static HashMap<Long,Long> lastLusted = new HashMap<>();
+
+    protected static final HashMap<Long, Float> lusts = new HashMap<>();
+    protected static final HashMap<Long, Long> lastLusted = new HashMap<>();
+
+    @SuppressWarnings("unused")
     public static float lustUnique(Creature creature){
+        if (creature == null) {
+            return 1.0f;
+        }
+
         long wurmid = creature.getWurmId();
-        if(lusts.containsKey(wurmid)){
-            float currentLust = lusts.get(wurmid);
-            if(currentLust >= 1.0f){ // When dealing more than 100% extra damage
-                Server.getInstance().broadCastAction(creature.getName()+" becomes enraged!", creature, 50);
-            }else if(currentLust >= 0.49f){ // When dealing between 50% and 100% extra damage.
-                Server.getInstance().broadCastAction(creature.getName()+" is becoming enraged!", creature, 50);
-            }else{
-                Server.getInstance().broadCastAction(creature.getName()+" is beginning to see red!", creature, 50);
-            }
-            lusts.put(wurmid, currentLust+0.01f);
+        float currentLust = lusts.getOrDefault(wurmid, 0.0f);
+
+        if(currentLust >= 1.0f){
+            Server.getInstance().broadCastAction(creature.getName() + " becomes enraged!", creature, 50);
+        }else if(currentLust >= 0.49f){
+            Server.getInstance().broadCastAction(creature.getName() + " is becoming enraged!", creature, 50);
         }else{
-            lusts.put(wurmid, 0.01f);
+            Server.getInstance().broadCastAction(creature.getName() + " is beginning to see red!", creature, 50);
         }
+
+        currentLust += 0.01f;
+        lusts.put(wurmid, currentLust);
         lastLusted.put(wurmid, System.currentTimeMillis());
-        return 1.0f+lusts.get(wurmid);
+        return 1.0f + currentLust;
     }
+
+    @SuppressWarnings("unused")
     public static float getLustMult(Creature creature){
-        long wurmid = creature.getWurmId();
-        if(lusts.containsKey(wurmid)){
-            return 1.0f+lusts.get(wurmid);
+        if (creature == null) {
+            return 1.0f;
         }
-        return 1.0f;
+
+        long wurmid = creature.getWurmId();
+        return 1.0f + lusts.getOrDefault(wurmid, 0.0f);
     }
+
+    @SuppressWarnings("unused")
     public static void pollLusts(){
-        for(Long wurmid : lastLusted.keySet()){
-            if(System.currentTimeMillis() >= lastLusted.get(wurmid) + TimeConstants.MINUTE_MILLIS*10){
-                logger.info("Bloodlust for "+wurmid+" expired. Removing from lists.");
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<Long, Long>> iterator = lastLusted.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Long, Long> entry = iterator.next();
+            long wurmid = entry.getKey();
+            long lastLustTime = entry.getValue();
+
+            if(now >= lastLustTime + TimeConstants.MINUTE_MILLIS * 10){
+                logger.info("Bloodlust for " + wurmid + " expired. Removing from lists.");
                 Creature creature = Creatures.getInstance().getCreatureOrNull(wurmid);
                 if(creature != null && !creature.isDead()){
-                    Server.getInstance().broadCastAction(creature.getName()+" calms down and is no longer enraged.", creature, 50);
+                    Server.getInstance().broadCastAction(creature.getName() + " calms down and is no longer enraged.", creature, 50);
                 }
-                lastLusted.remove(wurmid);
+                iterator.remove();
                 lusts.remove(wurmid);
             }
         }
     }
+
     public static void preInit(){
         try{
             ClassPool classPool = HookManager.getInstance().getClassPool();
             final Class<Bloodlust> thisClass = Bloodlust.class;
             String replace;
 
-            /* Disabled in Wurm Unlimited 1.9 - May need to be revisited in the future.
-
             Util.setReason("Hook for bloodlust system.");
             CtClass ctCreature = classPool.get("com.wurmonline.server.creatures.Creature");
             CtClass ctString = classPool.get("java.lang.String");
             CtClass ctBattle = classPool.get("com.wurmonline.server.combat.Battle");
             CtClass ctCombatEngine = classPool.get("com.wurmonline.server.combat.CombatEngine");
-            // @Nullable Creature performer, Creature defender, byte type, int pos, double damage, float armourMod,
-            // String attString, @Nullable Battle battle, float infection, float poison, boolean archery, boolean alreadyCalculatedResist
-            CtClass[] params1 = {
+
+            CtClass[] params = {
                     ctCreature,
                     ctCreature,
                     CtClass.byteType,
@@ -82,17 +104,18 @@ public class Bloodlust {
                     CtClass.booleanType,
                     CtClass.booleanType
             };
-            String desc1 = Descriptor.ofMethod(CtClass.booleanType, params1);
-            replace = "if($2.isDominated() && $1 != null && ($1.isUnique() || "+RareSpawns.class.getName()+".isRareCreature($1))){" +
-                    //"  logger.info(\"Detected unique hit on a pet. Adding damage.\");" +
-                    "  "+Bloodlust.class.getName()+".lustUnique($1);" +
-                    "}" +
-                    "if($1 != null && ($1.isUnique() || "+RareSpawns.class.getName()+".isRareCreature($1))){" +
-                    "  float lustMult = "+Bloodlust.class.getName()+".getLustMult($1);" +
-                    "  $5 = $5 * lustMult;" +
-                    "}";
-            Util.insertBeforeDescribed(thisClass, ctCombatEngine, "addWound", desc1, replace);*/
-        } catch (  IllegalArgumentException | ClassCastException e) {
+            String desc = Descriptor.ofMethod(CtClass.booleanType, params);
+
+            replace =
+                    "if($2 != null && $2.isDominated() && $1 != null && ($1.isUnique() || " + RareSpawns.class.getName() + ".isRareCreature($1))){" +
+                            "  " + Bloodlust.class.getName() + ".lustUnique($1);" +
+                            "}" +
+                            "if($1 != null && ($1.isUnique() || " + RareSpawns.class.getName() + ".isRareCreature($1))){" +
+                            "  $5 = $5 * " + Bloodlust.class.getName() + ".getLustMult($1);" +
+                            "}";
+
+            Util.insertBeforeDescribed(thisClass, ctCombatEngine, "addWound", desc, replace);
+        } catch (NotFoundException | IllegalArgumentException | ClassCastException e) {
             throw new HookException(e);
         }
     }

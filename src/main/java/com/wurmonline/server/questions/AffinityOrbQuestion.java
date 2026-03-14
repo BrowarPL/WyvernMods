@@ -24,7 +24,7 @@ public class AffinityOrbQuestion extends Question {
     }
     @Override
     public void answer(Properties answer) {
-        boolean accepted = answer.containsKey("accept") && answer.get("accept") == "true";
+        boolean accepted = answer.containsKey("accept") && "true".equals(answer.get("accept"));
         if (accepted) {
             logger.info("Accepted AffinityOrb");
             int entry = Integer.parseInt(answer.getProperty("affinity"));

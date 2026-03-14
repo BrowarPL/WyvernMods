@@ -33,7 +33,7 @@ public class FriyanTabletAction implements ModAction {
 			actionId,
 			"Read",
 			"reading",
-			new int[] { Actions.ACTION_TYPE_NOMOVE }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
+			new int[] { Actions.ACTION_TYPE_NOMOVE }
 		);
 		ModActions.registerAction(actionEntry);
 	}

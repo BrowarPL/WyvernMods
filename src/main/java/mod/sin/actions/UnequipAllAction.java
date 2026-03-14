@@ -32,7 +32,6 @@ public class UnequipAllAction implements ModAction {
 			"Unequip all armour",
 			"unequipping",
 			new int[] { 0 }
-			//new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
 		);
 		ModActions.registerAction(actionEntry);
 	}
@@ -76,7 +75,7 @@ public class UnequipAllAction implements ModAction {
 				if(performer instanceof Player){
 					try {
 						Player player = (Player) performer;
-						if (target.getParent() == null){
+						if (target == null || target.getParent() == null){
 							player.getCommunicator().sendSafeServerMessage("You cannot unequip an item that isn't equipped.");
 							return true;
 						}
@@ -84,7 +83,11 @@ public class UnequipAllAction implements ModAction {
 							player.getCommunicator().sendSafeServerMessage("You cannot unequip an item that you do not own.");
 							return true;
 						}
-						for(Item equip : player.getBody().getAllItems()){
+						Item[] allItems = player.getBody().getAllItems();
+						if (allItems == null) {
+							return true;
+						}
+						for(Item equip : allItems){
 							if(equip.isArmour() && equip.getParent().getWurmId() != player.getBody().getId()){
 								AutoEquipMethods.unequip(equip, player);
 							}

@@ -35,7 +35,6 @@ public class AddSubGroupAction implements ModAction {
 			"Add Subgroup",
 			"adding group",
 			new int[] { 0 }
-			//new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
 		);
 		ModActions.registerAction(actionEntry);
 	}
@@ -67,11 +66,15 @@ public class AddSubGroupAction implements ModAction {
 		tiq.sendQuestion();
 	}
 	private static void addGroup(Item group, Creature performer) {
-		if (group.getOwnerId() != performer.getWurmId()) {
+		if (group == null || group.getOwnerId() != performer.getWurmId()) {
 			performer.getCommunicator().sendNormalServerMessage("You must use this on an inventory group you own.");
 			return;
 		}
 		Item[] items = performer.getInventory().getItemsAsArray();
+		if (items == null) {
+			performer.getCommunicator().sendNormalServerMessage("Failed to access inventory.");
+			return;
+		}
 		int groupCount = 0;
 		for (Item item : items) {
 			if (item.getTemplateId() == 824) {

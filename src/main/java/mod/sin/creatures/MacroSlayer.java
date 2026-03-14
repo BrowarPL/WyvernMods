@@ -11,6 +11,7 @@ import org.gotti.wurmunlimited.modsupport.creatures.ModCreature;
 
 public class MacroSlayer implements ModCreature, CreatureTypes {
 	public static int templateId;
+
 	@Override
 	public CreatureTemplateBuilder createCreateTemplateBuilder() {
 		int[] types = {
@@ -54,6 +55,7 @@ public class MacroSlayer implements ModCreature, CreatureTypes {
 		templateId = builder.getTemplateId();
 		return builder;
 	}
+
 	@Override
 	public void addEncounters() {
 	}

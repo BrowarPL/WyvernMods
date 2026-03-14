@@ -17,12 +17,14 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@SuppressWarnings("unused")
 public class VillageTeleportAction implements ModAction {
     public static final Logger logger = Logger.getLogger(VillageTeleportAction.class.getName());
 
     private final short actionId;
     private final ActionEntry actionEntry;
 
+    @SuppressWarnings("unused")
     public VillageTeleportAction() {
         logger.info("VillageTeleportAction()");
 
@@ -31,7 +33,7 @@ public class VillageTeleportAction implements ModAction {
             actionId,
             "Village Teleport",
             "teleporting",
-            new int[] { 6 /* ACTION_TYPE_NOMOVE */ }	// 6 /* ACTION_TYPE_NOMOVE */, 48 /* ACTION_TYPE_ENEMY_ALWAYS */, 36 /* ACTION_TYPE_ALWAYS_USE_ACTIVE_ITEM */
+            new int[] { 6 }
         );
         ModActions.registerAction(actionEntry);
     }

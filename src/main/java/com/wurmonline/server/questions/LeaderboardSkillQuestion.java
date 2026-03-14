@@ -19,6 +19,7 @@ import java.util.Properties;
 
 public class LeaderboardSkillQuestion extends Question {
     protected int skillNum;
+    protected HashMap<String, Integer> optIn = new HashMap<>();
 
     public LeaderboardSkillQuestion(Creature aResponder, String aTitle, String aQuestion, long aTarget, int skillNum){
         super(aResponder, aTitle, aQuestion, 79, aTarget);
@@ -27,7 +28,7 @@ public class LeaderboardSkillQuestion extends Question {
 
     @Override
     public void answer(Properties answer) {
-        boolean accepted = answer.containsKey("okay") && answer.get("okay") == "true";
+        boolean accepted = "true".equals(answer.getProperty("okay"));
         if (accepted) {
             LeaderboardQuestion lbq = new LeaderboardQuestion(this.getResponder(), "Leaderboard", "Which leaderboard would you like to view?", this.getResponder().getWurmId());
             lbq.sendQuestion();
@@ -36,29 +37,33 @@ public class LeaderboardSkillQuestion extends Question {
 
     public int[] getSkillLevelColors(double skill){
         int[] colors = new int[3];
-        //colors[0] = 0; // No red value
+        if (Double.isNaN(skill) || Double.isInfinite(skill)) {
+            skill = 0d;
+        }
+        skill = Math.max(0d, Math.min(100d, skill));
+
         if(skill >= 90){
-            double percentTowards100 = 1-((100-skill)*0.1); // Division by 10
-            double greenPower = 128 + (128*percentTowards100);
-            colors[1] = (int) Math.min(255, greenPower);
-            colors[2] = (int) Math.max(0, 255-greenPower);
+            double percentTowards100 = 1 - ((100 - skill) * 0.1);
+            double greenPower = 128 + (128 * percentTowards100);
+            colors[1] = (int) Math.min(255, Math.max(0, greenPower));
+            colors[2] = (int) Math.max(0, Math.min(255, 255 - greenPower));
         }else if(skill >= 50){
-            double percentTowards90 = 1-((90-skill)*0.025); // Division by 40
-            double greenPower = percentTowards90*128;
-            colors[1] = (int) Math.max(128, greenPower);
-            colors[2] = (int) Math.min(255, 255-greenPower);
+            double percentTowards90 = 1 - ((90 - skill) * 0.025);
+            double greenPower = percentTowards90 * 128;
+            colors[1] = (int) Math.max(128, Math.min(255, greenPower));
+            colors[2] = (int) Math.min(255, Math.max(0, 255 - greenPower));
         }else{
-            double percentTowards50 = 1-((50-skill)*0.02); // Division by 50
-            double otherPower = 255 - (percentTowards50*255);
-            colors[0] = (int) Math.min(255, otherPower);
+            double percentTowards50 = 1 - ((50 - skill) * 0.02);
+            double otherPower = 255 - (percentTowards50 * 255);
+            colors[0] = (int) Math.min(255, Math.max(0, otherPower));
             colors[1] = (int) Math.min(255, Math.max(128, otherPower));
             colors[2] = 255;
         }
         return colors;
     }
 
-    protected HashMap<String, Integer> optIn = new HashMap<>();
     protected void identifyOptIn(){
+        optIn.clear();
         String name;
         int opted;
         Connection dbcon = ModSupportDb.getModSupportDb();
@@ -81,6 +86,7 @@ public class LeaderboardSkillQuestion extends Question {
             DbConnector.returnConnection(dbcon);
         }
     }
+
     @Override
     public void sendQuestion() {
         BmlForm f = new BmlForm("");
@@ -91,9 +97,7 @@ public class LeaderboardSkillQuestion extends Question {
         String name;
         double skill;
         int deity;
-        String extra = "";
 
-        // Populates HashMap with latest opt-in data.
         identifyOptIn();
 
         Connection dbcon = null;
@@ -101,7 +105,8 @@ public class LeaderboardSkillQuestion extends Question {
         ResultSet rs = null;
         try {
             dbcon = DbConnector.getPlayerDbCon();
-            ps = dbcon.prepareStatement("SELECT players.name, skills.value, players.deity FROM skills JOIN players ON skills.owner = players.wurmid WHERE skills.number = " + skillNum + " AND (players.power = 0) ORDER BY skills.value DESC LIMIT 20");
+            ps = dbcon.prepareStatement("SELECT players.name, skills.value, players.deity FROM skills JOIN players ON skills.owner = players.wurmid WHERE skills.number = ? AND (players.power = 0) ORDER BY skills.value DESC LIMIT 20");
+            ps.setInt(1, skillNum);
             rs = ps.executeQuery();
             while(rs.next()){
                 name = rs.getString(1);
@@ -119,29 +124,33 @@ public class LeaderboardSkillQuestion extends Question {
             DbUtilities.closeDatabaseObjects(ps, rs);
             DbConnector.returnConnection(dbcon);
         }
-        f.addBoldText("Top 20 players in "+this.getQuestion());
+
+        f.addBoldText("Top 20 players in " + this.getQuestion());
         f.addText("\n\n");
-        int i = 0;
         DecimalFormat df = new DecimalFormat(".000");
-        while(i < names.size() && i < skills.size()){
+
+        for (int i = 0; i < names.size() && i < skills.size(); i++) {
             name = names.get(i);
-            if(!optIn.containsKey(name)){
-                name = "Unknown";
-            }else if(optIn.get(name).equals(0)){
+            String extra = "";
+
+            if(!optIn.containsKey(name) || optIn.get(name).equals(0)){
                 name = "Unknown";
             }
             if(skillNum == SkillList.CHANNELING){
-                extra = " ("+ Deities.getDeityName(deities.get(i))+")";
+                extra = " (" + Deities.getDeityName(deities.get(i)) + ")";
             }
+
             int[] color = getSkillLevelColors(skills.get(i));
+            String rowText = df.format(skills.get(i)) + " - " + name + extra;
+
             if(names.get(i).equals(this.getResponder().getName())){
-                name = names.get(i);
-                f.addBoldColoredText(df.format(skills.get(i)) + " - " + name + extra, color[0], color[1], color[2]);
+                rowText = df.format(skills.get(i)) + " - " + names.get(i) + extra;
+                f.addBoldColoredText(rowText, color[0], color[1], color[2]);
             }else{
-                f.addColoredText(df.format(skills.get(i)) + " - " + name + extra, color[0], color[1], color[2]);
+                f.addColoredText(rowText, color[0], color[1], color[2]);
             }
-            ++i;
         }
+
         f.addText(" \n");
         f.beginHorizontalFlow();
         f.addButton("Ok", "okay");

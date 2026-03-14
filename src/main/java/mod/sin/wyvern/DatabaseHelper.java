@@ -14,73 +14,87 @@ import java.util.logging.Logger;
 public class DatabaseHelper {
     public static final Logger logger = Logger.getLogger(DatabaseHelper.class.getName());
 
-    public static void onPlayerLogin(Player p){
-        Connection dbcon = ModSupportDb.getModSupportDb();
+    private static boolean hasPlayerRow(Connection dbcon, String tableName, String columnName, String playerName) {
         PreparedStatement ps = null;
         ResultSet rs = null;
-        boolean foundLeaderboardOpt = false;
         try {
-            ps = dbcon.prepareStatement("SELECT * FROM LeaderboardOpt");
+            ps = dbcon.prepareStatement("SELECT 1 FROM " + tableName + " WHERE " + columnName + " = ? LIMIT 1");
+            ps.setString(1, playerName);
             rs = ps.executeQuery();
-            while (rs.next()) {
-                if (!rs.getString("name").equals(p.getName())) continue;
-                foundLeaderboardOpt = true;
-            }
-        }
-        catch (SQLException e) {
+            return rs.next();
+        } catch (SQLException e) {
             throw new RuntimeException(e);
-        }
-        finally{
+        } finally {
             DbUtilities.closeDatabaseObjects(ps, rs);
-            DbConnector.returnConnection(dbcon);
         }
-        if (!foundLeaderboardOpt) {
-            logger.info("No leaderboard entry for "+p.getName()+". Creating one.");
-            dbcon = ModSupportDb.getModSupportDb();
-            try {
-                ps = dbcon.prepareStatement("INSERT INTO LeaderboardOpt (name) VALUES(?)");
-                ps.setString(1, p.getName());
+    }
+
+    private static void insertLeaderboardOpt(Connection dbcon, String playerName) {
+        PreparedStatement ps = null;
+        try {
+            ps = dbcon.prepareStatement("INSERT INTO LeaderboardOpt (name) VALUES(?)");
+            ps.setString(1, playerName);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            DbUtilities.closeDatabaseObjects(ps, null);
+        }
+    }
+
+    private static void insertPlayerStats(Connection dbcon, String playerName) {
+        PreparedStatement ps = null;
+        try {
+            ps = dbcon.prepareStatement("INSERT INTO PlayerStats (NAME) VALUES(?)");
+            ps.setString(1, playerName);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            DbUtilities.closeDatabaseObjects(ps, null);
+        }
+    }
+
+    private static void ensureObjectiveTimerRow(Connection dbcon, String id) {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = dbcon.prepareStatement("SELECT 1 FROM ObjectiveTimers WHERE ID = ? LIMIT 1");
+            ps.setString(1, id);
+            rs = ps.executeQuery();
+            if (!rs.next()) {
+                DbUtilities.closeDatabaseObjects(ps, rs);
+                ps = null;
+                rs = null;
+
+                ps = dbcon.prepareStatement("INSERT INTO ObjectiveTimers (ID, TIMER) VALUES(?, ?)");
+                ps.setString(1, id);
+                ps.setLong(2, 0L);
                 ps.executeUpdate();
             }
-            catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-            finally{
-                DbUtilities.closeDatabaseObjects(ps, null);
-                DbConnector.returnConnection(dbcon);
-            }
-        }
-        boolean foundPlayerStats = false;
-        dbcon = ModSupportDb.getModSupportDb();
-        try {
-            ps = dbcon.prepareStatement("SELECT * FROM PlayerStats");
-            rs = ps.executeQuery();
-            while (rs.next()) {
-                if (!rs.getString("NAME").equals(p.getName())) continue;
-                foundPlayerStats = true;
-            }
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
-        }
-        finally{
+        } finally {
             DbUtilities.closeDatabaseObjects(ps, rs);
-            DbConnector.returnConnection(dbcon);
         }
-        if (!foundPlayerStats) {
-            logger.info("No player stats entry for "+p.getName()+". Creating one.");
-            dbcon = ModSupportDb.getModSupportDb();
-            try {
-                ps = dbcon.prepareStatement("INSERT INTO PlayerStats (NAME) VALUES(\"" + p.getName() + "\")");
-                ps.executeUpdate();
+    }
+
+    public static void onPlayerLogin(Player player){
+        Connection dbcon = ModSupportDb.getModSupportDb();
+        try {
+            boolean foundLeaderboardOpt = hasPlayerRow(dbcon, "LeaderboardOpt", "name", player.getName());
+            if (!foundLeaderboardOpt) {
+                logger.info("No leaderboard entry for " + player.getName() + ". Creating one.");
+                insertLeaderboardOpt(dbcon, player.getName());
             }
-            catch (SQLException e) {
-                throw new RuntimeException(e);
+
+            boolean foundPlayerStats = hasPlayerRow(dbcon, "PlayerStats", "NAME", player.getName());
+            if (!foundPlayerStats) {
+                logger.info("No player stats entry for " + player.getName() + ". Creating one.");
+                insertPlayerStats(dbcon, player.getName());
             }
-            finally{
-                DbUtilities.closeDatabaseObjects(ps, null);
-                DbConnector.returnConnection(dbcon);
-            }
+        } finally {
+            DbConnector.returnConnection(dbcon);
         }
     }
 
@@ -90,44 +104,43 @@ public class DatabaseHelper {
             String sql;
             String tableName = "LeaderboardOpt";
             if (!ModSupportDb.hasTable(con, tableName)) {
-                logger.info(tableName+" table not found in ModSupport. Creating table now.");
-                sql = "CREATE TABLE "+tableName+" (name VARCHAR(30) NOT NULL DEFAULT 'Unknown', OPTIN INT NOT NULL DEFAULT 0)";
+                logger.info(tableName + " table not found in ModSupport. Creating table now.");
+                sql = "CREATE TABLE " + tableName + " (name VARCHAR(30) NOT NULL DEFAULT 'Unknown', OPTIN INT NOT NULL DEFAULT 0)";
                 PreparedStatement ps = null;
                 try {
                     ps = con.prepareStatement(sql);
                     ps.execute();
-                }
-                finally{
+                } finally {
                     DbUtilities.closeDatabaseObjects(ps, null);
                 }
             }
+
             tableName = "SteamIdMap";
             if (!ModSupportDb.hasTable(con, tableName)) {
-                logger.info(tableName+" table not found in ModSupport. Creating table now.");
-                sql = "CREATE TABLE "+tableName+" (NAME VARCHAR(30) NOT NULL DEFAULT 'Unknown', STEAMID LONG NOT NULL DEFAULT 0)";
+                logger.info(tableName + " table not found in ModSupport. Creating table now.");
+                sql = "CREATE TABLE " + tableName + " (NAME VARCHAR(30) NOT NULL DEFAULT 'Unknown', STEAMID LONG NOT NULL DEFAULT 0)";
                 PreparedStatement ps = null;
                 try{
                     ps = con.prepareStatement(sql);
                     ps.execute();
-                }
-                finally{
+                } finally {
                     DbUtilities.closeDatabaseObjects(ps, null);
                 }
             }
+
             tableName = "PlayerStats";
             if (!ModSupportDb.hasTable(con, tableName)) {
-                logger.info(tableName+" table not found in ModSupport. Creating table now.");
-                sql = "CREATE TABLE "+tableName+" (NAME VARCHAR(30) NOT NULL DEFAULT 'Unknown', KILLS INT NOT NULL DEFAULT 0, DEATHS INT NOT NULL DEFAULT 0, DEPOTS INT NOT NULL DEFAULT 0, HOTAS INT NOT NULL DEFAULT 0, TITANS INT NOT NULL DEFAULT 0, UNIQUES INT NOT NULL DEFAULT 0)";
+                logger.info(tableName + " table not found in ModSupport. Creating table now.");
+                sql = "CREATE TABLE " + tableName + " (NAME VARCHAR(30) NOT NULL DEFAULT 'Unknown', KILLS INT NOT NULL DEFAULT 0, DEATHS INT NOT NULL DEFAULT 0, DEPOTS INT NOT NULL DEFAULT 0, HOTAS INT NOT NULL DEFAULT 0, TITANS INT NOT NULL DEFAULT 0, UNIQUES INT NOT NULL DEFAULT 0)";
                 PreparedStatement ps = null;
                 try {
                     ps = con.prepareStatement(sql);
                     ps.execute();
-                }
-                finally{
+                } finally {
                     DbUtilities.closeDatabaseObjects(ps, null);
                 }
             }else{
-                logger.info("Found "+tableName+". Checking if it has a unique column.");
+                logger.info("Found " + tableName + ". Checking if it has a unique column.");
                 ResultSet rs = null;
                 try {
                     rs = con.getMetaData().getColumns(null, null, tableName, "UNIQUES");
@@ -140,54 +153,31 @@ public class DatabaseHelper {
                         try {
                             ps = con.prepareStatement(sql);
                             ps.execute();
-                        }
-                        finally{
+                        } finally {
                             DbUtilities.closeDatabaseObjects(ps, null);
                         }
                     }
-                }
-                finally{
+                } finally {
                     DbUtilities.closeDatabaseObjects(null, rs);
                 }
             }
+
             tableName = "ObjectiveTimers";
             if (!ModSupportDb.hasTable(con, tableName)) {
-                logger.info(tableName+" table not found in ModSupport. Creating table now.");
-                sql = "CREATE TABLE "+tableName+" (ID VARCHAR(30) NOT NULL DEFAULT 'Unknown', TIMER LONG NOT NULL DEFAULT 0)";
+                logger.info(tableName + " table not found in ModSupport. Creating table now.");
+                sql = "CREATE TABLE " + tableName + " (ID VARCHAR(30) NOT NULL DEFAULT 'Unknown', TIMER LONG NOT NULL DEFAULT 0)";
                 PreparedStatement ps = null;
                 try {
                     ps = con.prepareStatement(sql);
                     ps.execute();
-                }
-                finally{
+                } finally {
                     DbUtilities.closeDatabaseObjects(ps, null);
-                }
-                Connection dbcon = ModSupportDb.getModSupportDb();
-                try {
-                    ps = dbcon.prepareStatement("INSERT INTO ObjectiveTimers (ID, TIMER) VALUES(\"DEPOT\", 0)");
-                    ps.executeUpdate();
-                }
-                catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-                finally{
-                    DbUtilities.closeDatabaseObjects(ps, null);
-                    DbConnector.returnConnection(dbcon);
-                }
-
-                dbcon = ModSupportDb.getModSupportDb();
-                try {
-                    ps = dbcon.prepareStatement("INSERT INTO ObjectiveTimers (ID, TIMER) VALUES(\"TITAN\", 0)");
-                    ps.executeUpdate();
-                }
-                catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-                finally{
-                    DbUtilities.closeDatabaseObjects(ps, null);
-                    DbConnector.returnConnection(dbcon);
                 }
             }
+
+            ensureObjectiveTimerRow(con, "DEPOT");
+            ensureObjectiveTimerRow(con, "TITAN");
+
             SupplyDepots.initializeDepotTimer();
             Titans.initializeTitanTimer();
         }
