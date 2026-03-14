@@ -342,6 +342,24 @@ public class MiscChanges {
             final Class<MiscChanges> thisClass = MiscChanges.class;
             String replace;
 
+            // Class definitions required for descriptors
+            CtClass ctItem = classPool.get("com.wurmonline.server.items.Item");
+            CtClass ctCreature = classPool.get("com.wurmonline.server.creatures.Creature");
+            CtClass ctAction = classPool.get("com.wurmonline.server.behaviours.Action");
+            CtClass ctMethodsItems = classPool.get("com.wurmonline.server.behaviours.MethodsItems");
+            CtClass ctSkill = classPool.get("com.wurmonline.server.skills.Skill");
+            CtClass ctPlayer = classPool.get("com.wurmonline.server.players.Player");
+            CtClass ctPlayers = classPool.get("com.wurmonline.server.Players");
+            CtClass ctServer = classPool.get("com.wurmonline.server.Server");
+            CtClass ctCommunicator = classPool.get("com.wurmonline.server.creatures.Communicator");
+
+            // Method descriptors
+            CtClass[] paramsImproveItem = { ctAction, ctCreature, ctItem, ctItem, CtClass.floatType };
+            String descImproveItem = Descriptor.ofMethod(CtClass.booleanType, paramsImproveItem);
+
+            CtClass[] paramsAlterSkill = { CtClass.doubleType, CtClass.booleanType, CtClass.floatType, CtClass.booleanType, CtClass.doubleType };
+            String descAlterSkill = Descriptor.ofMethod(CtClass.voidType, paramsAlterSkill);
+
             // - Change Title so femaleName can be modified - //
             CtClass ctTitles = classPool.get("com.wurmonline.server.players.Titles");
             CtClass[] innerClasses = ctTitles.getNestedClasses();
@@ -354,7 +372,6 @@ public class MiscChanges {
             }
 
             // - Create Server tab with initial messages - //
-            CtClass ctPlayers = classPool.get("com.wurmonline.server.Players");
             if (WyvernMods.enableInfoTab) {
                 CtMethod m = ctPlayers.getDeclaredMethod("sendStartGlobalKingdomChat");
                 String infoTabTitle = WyvernMods.infoTabName;
@@ -375,7 +392,6 @@ public class MiscChanges {
             }
 
             // - Disable mailboxes from being used while loaded - //
-            CtClass ctItem = classPool.get("com.wurmonline.server.items.Item");
             if (WyvernMods.disableMailboxUsageWhileLoaded) {
                 Util.setReason("Disable mailbox usage while loaded.");
                 replace = "$_ = $proceed($$);"
@@ -389,10 +405,7 @@ public class MiscChanges {
                 Util.instrumentDeclared(thisClass, ctItem, "moveToItem", "getOwnerId", replace);
             }
 
-            CtClass ctCreature = classPool.get("com.wurmonline.server.creatures.Creature");
-
             // - Increase the amount of checks for new legendary creature to spawn - //
-            CtClass ctServer = classPool.get("com.wurmonline.server.Server");
             if (WyvernMods.increasedLegendaryCreatures) {
                 Util.setReason("Increase chances of a Legendary Creature spawning.");
                 replace = "for(int i = 0; i < "+ WyvernMods.increasedLegendaryFrequency +"; ++i){"
@@ -410,7 +423,6 @@ public class MiscChanges {
             }
 
             // - Announce player titles in the Server tab - //
-            CtClass ctPlayer = classPool.get("com.wurmonline.server.players.Player");
             if (WyvernMods.announcePlayerTitles) {
                 Util.setReason("Announce player titles in the server tab.");
                 replace = "$_ = $proceed($$);"
@@ -442,7 +454,6 @@ public class MiscChanges {
             }
 
             // - Remove fatiguing actions requiring you to be on the ground - //
-            CtClass ctAction = classPool.get("com.wurmonline.server.behaviours.Action");
             if (WyvernMods.fatigueActionOverride) {
                 CtConstructor[] ctActionConstructors = ctAction.getConstructors();
                 for (CtConstructor constructor : ctActionConstructors) {
@@ -536,16 +547,6 @@ public class MiscChanges {
                 });
             }
 
-            CtClass ctSkill = classPool.get("com.wurmonline.server.skills.Skill");
-            CtClass[] params4 = {
-                    CtClass.doubleType,
-                    CtClass.booleanType,
-                    CtClass.floatType,
-                    CtClass.booleanType,
-                    CtClass.doubleType
-            };
-            String desc4 = Descriptor.ofMethod(CtClass.voidType, params4);
-
             // - Increase food affinity to give 30% increased skillgain instead of 10% - //
             if (WyvernMods.higherFoodAffinities) {
                 Util.setReason("Increase food affinity to give 30% increased skillgain instead of 10%.");
@@ -554,9 +555,7 @@ public class MiscChanges {
             }
 
             CtClass[] params5 = {
-                    CtClass.booleanType,
-                    CtClass.booleanType,
-                    CtClass.longType
+                    CtClass.booleanType, CtClass.booleanType, CtClass.longType
             };
             String desc5 = Descriptor.ofMethod(CtClass.booleanType, params5);
             if (WyvernMods.fasterCharcoalBurn) {
@@ -582,7 +581,6 @@ public class MiscChanges {
             }
 
             // -- Identify players making over 10 commands per second and causing the server log message -- //
-            CtClass ctCommunicator = classPool.get("com.wurmonline.server.creatures.Communicator");
             if (WyvernMods.logExcessiveActions) {
                 Util.setReason("Log excessive actions per second.");
                 replace = "$_ = $proceed($$);"
@@ -591,15 +589,6 @@ public class MiscChanges {
                         + "}";
                 Util.instrumentDeclared(thisClass, ctCommunicator, "reallyHandle_CMD_ITEM_CREATION_LIST", "log", replace);
             }
-
-            CtClass[] params = {
-                    CtClass.doubleType,
-                    CtClass.booleanType,
-                    CtClass.floatType,
-                    CtClass.booleanType,
-                    CtClass.doubleType
-            };
-            String desc = Descriptor.ofMethod(CtClass.voidType, params);
 
             if (WyvernMods.useDynamicSkillRate) {
                 double minRate = 1.0D;
@@ -611,7 +600,7 @@ public class MiscChanges {
                         "double maxRate = " + maxRate + ";" +
                         "double newPower = " + newPower + ";" +
                         "$1 = $1*(minRate+(maxRate-minRate)*Math.pow((100-this.knowledge)*0.01, newPower));";
-                Util.insertBeforeDescribed(thisClass, ctSkill, "alterSkill", desc, replace);
+                Util.insertBeforeDescribed(thisClass, ctSkill, "alterSkill", descAlterSkill, replace);
             }
 
             if (WyvernMods.reduceLockpickBreaking) {
@@ -634,12 +623,6 @@ public class MiscChanges {
                     });
                 }
             }
-
-            // Domy wyłączone na życzenie użytkownika
-            /*
-            CtClass ctMethodsStructure = classPool.get("com.wurmonline.server.behaviours.MethodsStructure");
-            if (WyvernMods.largerHouses) { ... }
-            */
 
             if (WyvernMods.reduceImbuePower) {
                 Util.setReason("Reduce power of imbues.");
@@ -700,13 +683,7 @@ public class MiscChanges {
 
                 Util.setReason("Stop royal food decay.");
                 CtClass[] params11 = {
-                        ctItem,
-                        CtClass.intType,
-                        CtClass.booleanType,
-                        CtClass.booleanType,
-                        CtClass.booleanType,
-                        CtClass.booleanType,
-                        CtClass.booleanType
+                        ctItem, CtClass.intType, CtClass.booleanType, CtClass.booleanType, CtClass.booleanType, CtClass.booleanType, CtClass.booleanType
                 };
                 String desc11 = Descriptor.ofMethod(CtClass.booleanType, params11);
                 replace = "if($0.isFood() && $0.hasNoDecay()){" +
@@ -791,10 +768,7 @@ public class MiscChanges {
             if (WyvernMods.adjustedFoodBiteFill) {
                 Util.setReason("Modify food fill percent.");
                 CtClass[] params12 = {
-                        ctAction,
-                        ctCreature,
-                        ctItem,
-                        CtClass.floatType
+                        ctAction, ctCreature, ctItem, CtClass.floatType
                 };
                 String desc12 = Descriptor.ofMethod(CtClass.booleanType, params12);
                 replace = "$_ = $proceed($1, $2, $3, $4, " + MiscChanges.class.getName() + ".getNewFoodFill(qlevel));";
@@ -842,20 +816,6 @@ public class MiscChanges {
                 });
             }
 
-            CtClass[] paramsImproveItem = {
-                    ctAction, ctCreature, ctItem, ctItem, CtClass.floatType
-            };
-            String descImproveItem = Descriptor.ofMethod(CtClass.booleanType, paramsImproveItem);
-
-            CtClass[] paramsAlterSkill = {
-                    CtClass.doubleType,
-                    CtClass.booleanType,
-                    CtClass.floatType,
-                    CtClass.booleanType,
-                    CtClass.doubleType
-            };
-            String descAlterSkill = Descriptor.ofMethod(CtClass.voidType, paramsAlterSkill);
-
             // - Make armour title benefits always occur - //
             if (WyvernMods.alwaysArmourTitleBenefits) {
                 Util.setReason("Make armour title benefits always occur.");
@@ -884,10 +844,7 @@ public class MiscChanges {
             if (WyvernMods.lessFillingDrinks) {
                 Util.setReason("Make drinks less filling.");
                 CtClass[] params13 = {
-                        ctAction,
-                        ctCreature,
-                        ctItem,
-                        CtClass.floatType
+                        ctAction, ctCreature, ctItem, CtClass.floatType
                 };
                 String desc13 = Descriptor.ofMethod(CtClass.booleanType, params13);
                 replace = "if(template != 128){" +
@@ -932,12 +889,7 @@ public class MiscChanges {
                 Util.setReason("Disable smelting pots from being used.");
                 CtClass ctItemBehaviour = classPool.get("com.wurmonline.server.behaviours.ItemBehaviour");
                 CtClass[] params14 = {
-                        ctAction,
-                        ctCreature,
-                        ctItem,
-                        ctItem,
-                        CtClass.shortType,
-                        CtClass.floatType
+                        ctAction, ctCreature, ctItem, ctItem, CtClass.shortType, CtClass.floatType
                 };
                 String desc14 = Descriptor.ofMethod(CtClass.booleanType, params14);
                 replace = "if($5 == 519){" +
@@ -952,14 +904,11 @@ public class MiscChanges {
                 CtClass ctSpellEffectsEnum = classPool.get("com.wurmonline.server.creatures.SpellEffectsEnum");
                 CtClass ctString = classPool.get("java.lang.String");
                 CtClass[] params15 = {
-                        ctSpellEffectsEnum,
-                        CtClass.intType,
-                        ctString
+                        ctSpellEffectsEnum, CtClass.intType, ctString
                 };
                 String desc15 = Descriptor.ofMethod(CtClass.voidType, params15);
                 CtClass[] params16 = {
-                        ctSpellEffectsEnum,
-                        CtClass.intType
+                        ctSpellEffectsEnum, CtClass.intType
                 };
                 String desc16 = Descriptor.ofMethod(CtClass.voidType, params16);
                 replace = "$_ = " + MiscChanges.class.getName() + ".shouldSendBuff($0);";
