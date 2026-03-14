@@ -42,15 +42,18 @@ import java.util.logging.Logger;
 
 public class MiscChanges {
     public static final Logger logger = Logger.getLogger(MiscChanges.class.getName());
-
+    @SuppressWarnings("Convert2Lambda")
     public static void sendServerTabMessage(String channel, final String message, final int red, final int green, final int blue){
         DiscordRelay.sendToDiscord(channel, message, true);
         // WARNING: Never change this from a new Runnable. Lambdas are a lie and will break everything.
-        Runnable r = () -> {
-            Message mess;
-            for (Player rec : Players.getInstance().getPlayers()) {
-                mess = new Message(rec, (byte) 16, "Server", message, red, green, blue);
-                rec.getCommunicator().sendMessage(mess);
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                Message mess;
+                for (Player rec : Players.getInstance().getPlayers()) {
+                    mess = new Message(rec, (byte) 16, "Server", message, red, green, blue);
+                    rec.getCommunicator().sendMessage(mess);
+                }
             }
         };
         r.run();
@@ -58,19 +61,23 @@ public class MiscChanges {
     public static void sendGlobalFreedomChat(final Creature sender, final String message, final int red, final int green, final int blue){
         sendGlobalFreedomChat(sender, sender.getNameWithoutPrefixes(), message, red, green, blue);
     }
+    @SuppressWarnings("Convert2Lambda")
     public static void sendGlobalFreedomChat(final Creature sender, final String name, final String message, final int red, final int green, final int blue){
-        Runnable r = () -> {
-            Message mess;
-            for (Player rec : Players.getInstance().getPlayers()) {
-                mess = new Message(sender, (byte) 10, "GL-Freedom", "<" + name + "> " + message, red, green, blue);
-                rec.getCommunicator().sendMessage(mess);
-            }
-            if (message.trim().length() > 1) {
-                WcKingdomChat wc = new WcKingdomChat(WurmId.getNextWCCommandId(), sender.getWurmId(), name, message, false, (byte) 4, red, green, blue);
-                if (!Servers.isThisLoginServer()) {
-                    wc.sendToLoginServer();
-                } else {
-                    wc.sendFromLoginServer();
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                Message mess;
+                for (Player rec : Players.getInstance().getPlayers()) {
+                    mess = new Message(sender, (byte) 10, "GL-Freedom", "<" + name + "> " + message, red, green, blue);
+                    rec.getCommunicator().sendMessage(mess);
+                }
+                if (message.trim().length() > 1) {
+                    WcKingdomChat wc = new WcKingdomChat(WurmId.getNextWCCommandId(), sender.getWurmId(), name, message, false, (byte) 4, red, green, blue);
+                    if (!Servers.isThisLoginServer()) {
+                        wc.sendToLoginServer();
+                    } else {
+                        wc.sendFromLoginServer();
+                    }
                 }
             }
         };
