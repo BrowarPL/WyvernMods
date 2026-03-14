@@ -335,7 +335,7 @@ public class MiscChanges {
             throw new RuntimeException(e);
         }
     }
-
+    @SuppressWarnings("unused")
     public static void preInit(){
         try{
             ClassPool classPool = HookManager.getInstance().getClassPool();
@@ -432,16 +432,19 @@ public class MiscChanges {
                 Util.instrumentDeclared(thisClass, ctPlayer, "addTitle", "sendNormalServerMessage", replace);
             }
 
+            /*
+            // OBSOLETE IN WURM 1.9 - The base game now natively ignores leather (Template 72)
             // - Allow leather to improve beyond QL after being combinable - //
             if (WyvernMods.improveCombinedLeather) {
                 Util.setReason("Allow leather to improve beyond QL after being combinable.");
-                replace = "if($0.getTemplateId() != 72){"
+                replace = "if(((com.wurmonline.server.items.Item)$0).getTemplateId() != 72){"
                         + "  $_ = $proceed($$);"
                         + "}else{"
                         + "  $_ = false;"
                         + "}";
                 Util.instrumentDescribed(thisClass, ctMethodsItems, "improveItem", descImproveItem, "isCombine", replace);
             }
+            */
 
             // - Check new improve materials - //
             if (WyvernMods.allowModdedImproveTemplates) {
@@ -550,8 +553,8 @@ public class MiscChanges {
             // - Increase food affinity to give 30% increased skillgain instead of 10% - //
             if (WyvernMods.higherFoodAffinities) {
                 Util.setReason("Increase food affinity to give 30% increased skillgain instead of 10%.");
-                replace = "if(com.wurmonline.server.skills.AffinitiesTimed.isTimedAffinity(this.parent.getId(), this.getNumber())) { advanceMultiplicator *= 1.181818d; } $_ = $proceed($$);";
-                Util.instrumentDescribed(thisClass, ctSkill, "alterSkill", descAlterSkill, "hasSleepBonus", replace);
+                replace = "if(com.wurmonline.server.skills.AffinitiesTimed.isTimedAffinity(this.parent.getId(), this.getNumber())) { $1 *= 1.181818d; }";
+                Util.insertBeforeDescribed(thisClass, ctSkill, "alterSkill", descAlterSkill, replace);
             }
 
             CtClass[] params5 = {
@@ -729,26 +732,6 @@ public class MiscChanges {
                 Util.instrumentDeclared(thisClass, ctPlayerInfo, "calculateSleep", "setSleep", replace);
             }
 
-            // - Allow royal smith to improve items faster - //
-            if (WyvernMods.royalSmithImproveFaster) {
-                Util.setReason("Allow royal smith to improve smithing items faster.");
-                replace = "if(" + MiscChanges.class.getName() + ".royalSmithImprove((com.wurmonline.server.creatures.Creature)$1, improve)){" +
-                        "  $_ = $proceed($$) * 0.9f;" +
-                        "}else{" +
-                        "  $_ = $proceed($$);" +
-                        "}";
-                Util.instrumentDescribed(thisClass, ctMethodsItems, "improveItem", descImproveItem, "getImproveActionTime", replace);
-                Util.setReason("Allow royal smith to improve smithing items faster.");
-                Util.instrumentDeclared(thisClass, ctMethodsItems, "polishItem", "getImproveActionTime", replace);
-                Util.setReason("Allow royal smith to improve smithing items faster. Also make tempering use water enchants.");
-                replace = "if(" + MiscChanges.class.getName() + ".royalSmithImprove((com.wurmonline.server.creatures.Creature)$1, improve)){" +
-                        "  $_ = $proceed($1, target) * 0.9f;" +
-                        "}else{" +
-                        "  $_ = $proceed($1, target);" +
-                        "}";
-                Util.instrumentDeclared(thisClass, ctMethodsItems, "temper", "getImproveActionTime", replace);
-            }
-
             if (WyvernMods.fixMountedBodyStrength) {
                 ctCreature.getMethod("getTraitMovePercent", "(Z)F").instrument(new ExprEditor() {
                     private boolean first = true;
@@ -773,16 +756,6 @@ public class MiscChanges {
                 String desc12 = Descriptor.ofMethod(CtClass.booleanType, params12);
                 replace = "$_ = $proceed($1, $2, $3, $4, " + MiscChanges.class.getName() + ".getNewFoodFill(qlevel));";
                 Util.instrumentDescribed(thisClass, ctMethodsItems, "eat", desc12, "modifyHunger", replace);
-            }
-
-            // - Rare material usage in improvement - //
-            if (WyvernMods.rareMaterialImprove) {
-                Util.setReason("Hook for rare material usage in improvement.");
-                replace = "if(" + MiscChanges.class.getName() + ".rollRarityImprove($0, usedWeight)){" +
-                        "  rarity = source.getRarity();" +
-                        "}" +
-                        "$_ = $proceed($$);";
-                Util.instrumentDescribed(thisClass, ctMethodsItems, "improveItem", descImproveItem, "setWeight", replace);
             }
 
             if (WyvernMods.rarityWindowBadLuckProtection) {
@@ -814,14 +787,6 @@ public class MiscChanges {
                         }
                     }
                 });
-            }
-
-            // - Make armour title benefits always occur - //
-            if (WyvernMods.alwaysArmourTitleBenefits) {
-                Util.setReason("Make armour title benefits always occur.");
-                replace = "$_ = improve.getNumber();";
-                Util.instrumentDescribed(thisClass, ctMethodsItems, "improveItem", descImproveItem, "getSkillId", replace);
-                Util.instrumentDeclared(thisClass, ctMethodsItems, "polishItem", "getSkillId", replace);
             }
 
             CtClass ctAbilities = classPool.get("com.wurmonline.server.players.Abilities");

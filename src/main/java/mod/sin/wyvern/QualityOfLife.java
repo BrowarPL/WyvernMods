@@ -12,9 +12,12 @@ import javassist.NotFoundException;
 import javassist.bytecode.Descriptor;
 import javassist.expr.ExprEditor;
 import javassist.expr.FieldAccess;
+import javassist.CtMethod;
+import javassist.expr.MethodCall;
 import mod.sin.lib.Util;
 import org.gotti.wurmunlimited.modloader.classhooks.HookException;
 import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
+
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -79,6 +82,9 @@ public class QualityOfLife {
             CtClass ctCreature = classPool.get("com.wurmonline.server.creatures.Creature");
             CtClass ctItem = classPool.get("com.wurmonline.server.items.Item");
             CtClass ctCaveWallBehaviour = classPool.get("com.wurmonline.server.behaviours.CaveWallBehaviour");
+            CtClass ctTileRockBehaviour = classPool.get("com.wurmonline.server.behaviours.TileRockBehaviour");
+            CtClass ctMethodsItems = classPool.get("com.wurmonline.server.behaviours.MethodsItems");
+
             CtClass[] params1 = {
                     ctAction, ctCreature, ctItem, CtClass.intType, CtClass.intType,
                     CtClass.booleanType, CtClass.intType, CtClass.intType,
@@ -92,14 +98,12 @@ public class QualityOfLife {
                 Util.instrumentDescribed(thisClass, ctCaveWallBehaviour, "action", desc1, "putItemInfrontof", replace);
             }
 
-            CtClass ctTileRockBehaviour = classPool.get("com.wurmonline.server.behaviours.TileRockBehaviour");
             if (WyvernMods.mineSurfaceToVehicle) {
                 Util.setReason("Allow players to surface mine directly into vehicles.");
                 replace = "$_ = $proceed($$); " + QualityOfLife.class.getName() + ".vehicleHook(performer, $0);";
                 Util.instrumentDeclared(thisClass, ctTileRockBehaviour, "mine", "setDataXY", replace);
             }
 
-            CtClass ctMethodsItems = classPool.get("com.wurmonline.server.behaviours.MethodsItems");
             if (WyvernMods.chopLogsToVehicle) {
                 Util.setReason("Allow players to chop logs directly into vehicles.");
                 replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook((com.wurmonline.server.creatures.Creature)$1, $0)) { $_ = $proceed($$); }";
@@ -115,13 +119,26 @@ public class QualityOfLife {
 
             if (WyvernMods.mineGemsToVehicle) {
                 Util.setReason("Send gems, source crystals, flint, etc. into vehicle.");
-                CtClass[] paramsCreateGem = {
-                        CtClass.intType, CtClass.intType, CtClass.intType, CtClass.intType,
-                        ctCreature, CtClass.doubleType, CtClass.booleanType, ctAction
-                };
-                String descCreateGem = Descriptor.ofMethod(ctItem, paramsCreateGem);
-                replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook((com.wurmonline.server.creatures.Creature)$1, $0)) { $_ = $proceed($$); }";
-                Util.instrumentDescribed(thisClass, ctTileRockBehaviour, "createGem", descCreateGem, "putItemInfrontof", replace);
+                try {
+                    CtMethod[] methods = ctTileRockBehaviour.getDeclaredMethods("createGem");
+                    for (CtMethod m : methods) {
+                        m.instrument(new ExprEditor() {
+                            public void edit(MethodCall mc) throws CannotCompileException {
+                                if (mc.getMethodName().equals("putItemInfrontof")) {
+                                    mc.replace("{" +
+                                            "  if (!mod.sin.wyvern.QualityOfLife.vehicleHook((com.wurmonline.server.creatures.Creature)$1, $0)) {" +
+                                            "    $_ = $proceed($$);" +
+                                            "  } else {" +
+                                            "    $_ = true;" +
+                                            "  }" +
+                                            "}");
+                                }
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    logger.log(Level.WARNING, "Failed to fully instrument createGem in QualityOfLife. Reason: " + e.getMessage());
+                }
             }
 
             if (WyvernMods.regenerateStaminaOnVehicleAnySlope) {

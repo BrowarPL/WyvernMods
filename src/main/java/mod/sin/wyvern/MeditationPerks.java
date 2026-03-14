@@ -13,7 +13,6 @@ import com.wurmonline.server.players.Player;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
-import javassist.bytecode.Descriptor;
 import mod.sin.lib.Util;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.gotti.wurmunlimited.modloader.classhooks.HookException;
@@ -25,6 +24,7 @@ import java.util.logging.Logger;
 public class MeditationPerks {
     public static final Logger logger = Logger.getLogger(MeditationPerks.class.getName());
 
+    @SuppressWarnings("unused")
     public static void sendPassiveBuffs(Cultist cultist){
         byte path = cultist.getPath();
         byte level = cultist.getLevel();
@@ -50,6 +50,7 @@ public class MeditationPerks {
             logger.log(Level.WARNING, "", e);
         }
     }
+    @SuppressWarnings("unused")
     public static float getCultistSpeedMultiplier(MovementScheme scheme){
         try {
             Creature cret = ReflectionUtil.getPrivateField(scheme, ReflectionUtil.getField(scheme.getClass(), "creature"));
@@ -70,6 +71,7 @@ public class MeditationPerks {
         }
         return 1.0f;
     }
+    @SuppressWarnings("unused")
     public static float newStaminaModifierFor(Creature performer, int staminaNeeded){
         int currstam = performer.getStatus().getStamina();
         float staminaMod = 1.0f;
@@ -94,6 +96,7 @@ public class MeditationPerks {
         }
         return staminaMod;
     }
+    @SuppressWarnings("unused")
     public static float getPowerStaminaBonus(Creature creature){
         if(creature instanceof Player){
             Player player = (Player) creature;
@@ -110,6 +113,7 @@ public class MeditationPerks {
         }
         return 0f;
     }
+    @SuppressWarnings("unused")
     public static float getKnowledgeSkillGain(Player player){
         if(player.getCultist() != null){
             Cultist path = player.getCultist();
@@ -123,6 +127,7 @@ public class MeditationPerks {
         }
         return 1.0f;
     }
+    @SuppressWarnings("unused")
     public static byte getNewPathFor(int tilex, int tiley, int layer){
         if (layer < 0) {
             return Cults.PATH_INSANITY;
@@ -144,6 +149,7 @@ public class MeditationPerks {
         }
         return Cults.PATH_NONE;
     }
+    @SuppressWarnings("unused")
     public static void preInit(){
         try{
             ClassPool classPool = HookManager.getInstance().getClassPool();
@@ -198,21 +204,15 @@ public class MeditationPerks {
                 Util.instrumentDeclared(thisClass, ctCreatureStatus, "modifyStamina", "usesNoStamina", replace);
             }
 
-            CtClass[] paramsAlterSkill = {
-                    CtClass.doubleType,
-                    CtClass.booleanType,
-                    CtClass.floatType,
-                    CtClass.booleanType,
-                    CtClass.doubleType
-            };
-            String descAlterSkill = Descriptor.ofMethod(CtClass.voidType, paramsAlterSkill);
-
+            /*
+            // INACCESSIBLE IN WURM 1.9 - Missing debug symbols for 'staminaMod' and 'player' local variables.
             if (WyvernMods.scalingKnowledgeSkillGain) {
                 Util.setReason("Scale path of knowledge skill gain from level 7 onwards.");
                 replace = "staminaMod *= " + MeditationPerks.class.getName() + ".getKnowledgeSkillGain(player);" +
                         "$_ = false;";
-                Util.instrumentDescribed(thisClass, ctSkill, "alterSkill", descAlterSkill, "levelElevenSkillgain", replace);
+                Util.instrumentDeclared(thisClass, ctSkill, "alterSkill", "levelElevenSkillgain", replace);
             }
+            */
 
             if (WyvernMods.removeMeditationTickTimer) {
                 Util.setReason("Remove artifical tick timer for meditation.");
@@ -227,7 +227,7 @@ public class MeditationPerks {
             }
 
             if (WyvernMods.enableMeditationAbilityCooldowns) {
-                // - Adjust meditation ability cooldowns - //
+                // Adjust meditation ability cooldowns
                 replace = "return this.path == 1 && this.level > 3 && System.currentTimeMillis() - this.cooldown1 > " + WyvernMods.loveRefreshCooldown + ";";
                 Util.setBodyDeclared(thisClass, ctCultist, "mayRefresh", replace);
 
