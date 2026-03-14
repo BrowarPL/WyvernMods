@@ -420,8 +420,7 @@ public class MiscChanges {
                 Util.instrumentDeclared(thisClass, ctPlayer, "addTitle", "sendNormalServerMessage", replace);
             }
 
-            // - Make leather not suck even after it's able to be combined. - //
-            CtClass ctMethodsItems = classPool.get("com.wurmonline.server.behaviours.MethodsItems");
+            // - Allow leather to improve beyond QL after being combinable - //
             if (WyvernMods.improveCombinedLeather) {
                 Util.setReason("Allow leather to improve beyond QL after being combinable.");
                 replace = "if($0.getTemplateId() != 72){"
@@ -429,7 +428,7 @@ public class MiscChanges {
                         + "}else{"
                         + "  $_ = false;"
                         + "}";
-                Util.instrumentDeclared(thisClass, ctMethodsItems, "improveItem", "isCombine", replace);
+                Util.instrumentDescribed(thisClass, ctMethodsItems, "improveItem", descImproveItem, "isCombine", replace);
             }
 
             // - Check new improve materials - //
@@ -547,10 +546,11 @@ public class MiscChanges {
             };
             String desc4 = Descriptor.ofMethod(CtClass.voidType, params4);
 
+            // - Increase food affinity to give 30% increased skillgain instead of 10% - //
             if (WyvernMods.higherFoodAffinities) {
                 Util.setReason("Increase food affinity to give 30% increased skillgain instead of 10%.");
                 replace = "if(com.wurmonline.server.skills.AffinitiesTimed.isTimedAffinity(this.parent.getId(), this.getNumber())) { advanceMultiplicator *= 1.181818d; } $_ = $proceed($$);";
-                Util.instrumentDescribed(thisClass, ctSkill, "alterSkill", desc4, "hasSleepBonus", replace);
+                Util.instrumentDescribed(thisClass, ctSkill, "alterSkill", descAlterSkill, "hasSleepBonus", replace);
             }
 
             CtClass[] params5 = {
@@ -752,6 +752,7 @@ public class MiscChanges {
                 Util.instrumentDeclared(thisClass, ctPlayerInfo, "calculateSleep", "setSleep", replace);
             }
 
+            // - Allow royal smith to improve items faster - //
             if (WyvernMods.royalSmithImproveFaster) {
                 Util.setReason("Allow royal smith to improve smithing items faster.");
                 replace = "if(" + MiscChanges.class.getName() + ".royalSmithImprove((com.wurmonline.server.creatures.Creature)$1, improve)){" +
@@ -759,7 +760,7 @@ public class MiscChanges {
                         "}else{" +
                         "  $_ = $proceed($$);" +
                         "}";
-                Util.instrumentDeclared(thisClass, ctMethodsItems, "improveItem", "getImproveActionTime", replace);
+                Util.instrumentDescribed(thisClass, ctMethodsItems, "improveItem", descImproveItem, "getImproveActionTime", replace);
                 Util.setReason("Allow royal smith to improve smithing items faster.");
                 Util.instrumentDeclared(thisClass, ctMethodsItems, "polishItem", "getImproveActionTime", replace);
                 Util.setReason("Allow royal smith to improve smithing items faster. Also make tempering use water enchants.");
@@ -800,13 +801,14 @@ public class MiscChanges {
                 Util.instrumentDescribed(thisClass, ctMethodsItems, "eat", desc12, "modifyHunger", replace);
             }
 
+            // - Rare material usage in improvement - //
             if (WyvernMods.rareMaterialImprove) {
                 Util.setReason("Hook for rare material usage in improvement.");
                 replace = "if(" + MiscChanges.class.getName() + ".rollRarityImprove($0, usedWeight)){" +
                         "  rarity = source.getRarity();" +
                         "}" +
                         "$_ = $proceed($$);";
-                Util.instrumentDeclared(thisClass, ctMethodsItems, "improveItem", "setWeight", replace);
+                Util.instrumentDescribed(thisClass, ctMethodsItems, "improveItem", descImproveItem, "setWeight", replace);
             }
 
             if (WyvernMods.rarityWindowBadLuckProtection) {
@@ -840,11 +842,25 @@ public class MiscChanges {
                 });
             }
 
+            CtClass[] paramsImproveItem = {
+                    ctAction, ctCreature, ctItem, ctItem, CtClass.floatType
+            };
+            String descImproveItem = Descriptor.ofMethod(CtClass.booleanType, paramsImproveItem);
+
+            CtClass[] paramsAlterSkill = {
+                    CtClass.doubleType,
+                    CtClass.booleanType,
+                    CtClass.floatType,
+                    CtClass.booleanType,
+                    CtClass.doubleType
+            };
+            String descAlterSkill = Descriptor.ofMethod(CtClass.voidType, paramsAlterSkill);
+
+            // - Make armour title benefits always occur - //
             if (WyvernMods.alwaysArmourTitleBenefits) {
                 Util.setReason("Make armour title benefits always occur.");
                 replace = "$_ = improve.getNumber();";
-                Util.instrumentDeclared(thisClass, ctMethodsItems, "improveItem", "getSkillId", replace);
-                Util.setReason("Make armour title benefits always occur.");
+                Util.instrumentDescribed(thisClass, ctMethodsItems, "improveItem", descImproveItem, "getSkillId", replace);
                 Util.instrumentDeclared(thisClass, ctMethodsItems, "polishItem", "getSkillId", replace);
             }
 

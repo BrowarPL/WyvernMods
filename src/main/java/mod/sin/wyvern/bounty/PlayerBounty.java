@@ -120,26 +120,24 @@ public class PlayerBounty {
 			if(mob.isReborn() || mob.isBred()){
 				return;
 			}
-			//int mobTemplateId = mob.getTemplate().getTemplateId();
+
 			long mobWurmId = mob.getWurmId();
+
+			// Fetch Steam ID or fallback to Wurm ID to prevent NullPointerException
+			Long playerSteamId = steamIdMap.get(player.getName());
+			if (playerSteamId == null) {
+				playerSteamId = player.getWurmId();
+			}
+
 			if(playersRewarded.containsKey(mobWurmId)){
 				ArrayList<Long> steamArray = playersRewarded.get(mobWurmId);
-				if(steamArray.contains(steamIdMap.get(player.getName()))){
+				if(steamArray.contains(playerSteamId)){
 					player.getCommunicator().sendSafeServerMessage("Another character has claimed the reward from this bounty.");
 					return;
 				}
 			}
 			if(DamageEngine.dealtDamage.containsKey(mobWurmId) && DamageEngine.dealtDamage.get(mobWurmId).containsKey(player.getWurmId())){
-				// -- Damage Dealt Rewards -- //
-				/*if(mob.isUnique()){
-					// Treasure boxes awarded to players who deal damage:
-					Item treasureBox = ItemUtil.createTreasureBox();
-					if(treasureBox != null){
-						player.getInventory().insertItem(treasureBox);
-					}else{
-						logger.warning("Error: Treasure box was not created properly!");
-					}
-				}*/
+				// Damage Dealt Rewards //
 				if(mob.isUnique()){
 					MiscChanges.addPlayerStat(player.getName(), "UNIQUES");
 				}
@@ -156,15 +154,7 @@ public class PlayerBounty {
 					MiscChanges.addPlayerStat(player.getName(), "TITANS");
 					return;
 				}
-				//double fightskill = player.getFightingSkill().getKnowledge();
-		    	/*if((mobTemplateId == Reaper.templateId || mobTemplateId == SpectralDrake.templateId) && fightskill >= 50){
-		    		rewardPowerfulLoot(player, mob); // Reward affinity orb and enchant orb:
-		    		if(mob.getTemplate().getTemplateId() == SpectralDrake.templateId){
-			    		rewardSpectralLoot(player); // Reward spectral hide for spectral drakes
-		    		}
-		    		return; // If the player receives powerful loot, break the method completely and skip bounty.
-		    	}*/
-				// -- End Damage Dealt Rewards -- //
+				// End Damage Dealt Rewards //
 			}
 			String mobName = mob.getTemplate().getName().toLowerCase();
 			String mobType = mob.getPrefixes();
@@ -180,16 +170,8 @@ public class PlayerBounty {
 				if(!mob.isUnique() && mob.getTemplate().getTemplateId() != SpectralDrake.templateId && mob.getTemplate().getTemplateId() != Reaper.templateId){
 					iron *= 1.2d;
 				}
-    			/*try {
-					player.getSkills().getSkill(SkillList.MEDITATING).skillCheck(10, 0, false, 1); // Meditation skill gain
-					float faithMod = 1-(player.getFaith()/200f);
-					player.modifyFaith((((float)cretStr)*faithMod)/200000f); // Faith skill gain
-				} catch (NoSuchSkillException e) {
-					logger.log(Level.WARNING, "", e);
-				}*/
 			}
-			// Multiply bounty based on type
-			//if(mob.isAggHuman() || mob.getBaseCombatRating() > 10) {
+
 			iron *= getTypeBountyMod(mob, mobType);
 
 			player.addMoney(iron);
@@ -197,7 +179,7 @@ public class PlayerBounty {
 			String strBuilder = "You are awarded " + coinMessage;
 			strBuilder += " for slaying the " + mob.getName() + ".";
 			player.getCommunicator().sendSafeServerMessage(strBuilder);
-			long playerSteamId = steamIdMap.get(player.getName());
+
 			if(playersRewarded.containsKey(mobWurmId)){
 				playersRewarded.get(mobWurmId).add(playerSteamId);
 			}else{
@@ -205,7 +187,6 @@ public class PlayerBounty {
 				steamArray.add(playerSteamId);
 				playersRewarded.put(mobWurmId, steamArray);
 			}
-			//}
 		} catch (IOException | FailedException | NoSuchTemplateException e) {
 			logger.log(Level.WARNING, "", e);
 		}

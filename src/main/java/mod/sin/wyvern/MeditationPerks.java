@@ -198,20 +198,20 @@ public class MeditationPerks {
                 Util.instrumentDeclared(thisClass, ctCreatureStatus, "modifyStamina", "usesNoStamina", replace);
             }
 
-            CtClass[] params1 = {
+            CtClass[] paramsAlterSkill = {
                     CtClass.doubleType,
                     CtClass.booleanType,
                     CtClass.floatType,
                     CtClass.booleanType,
                     CtClass.doubleType
             };
-            String desc1 = Descriptor.ofMethod(CtClass.voidType, params1);
+            String descAlterSkill = Descriptor.ofMethod(CtClass.voidType, paramsAlterSkill);
 
             if (WyvernMods.scalingKnowledgeSkillGain) {
                 Util.setReason("Scale path of knowledge skill gain from level 7 onwards.");
                 replace = "staminaMod *= " + MeditationPerks.class.getName() + ".getKnowledgeSkillGain(player);" +
                         "$_ = false;";
-                Util.instrumentDescribed(thisClass, ctSkill, "alterSkill", desc1, "levelElevenSkillgain", replace);
+                Util.instrumentDescribed(thisClass, ctSkill, "alterSkill", descAlterSkill, "levelElevenSkillgain", replace);
             }
 
             if (WyvernMods.removeMeditationTickTimer) {

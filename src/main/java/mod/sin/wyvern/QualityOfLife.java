@@ -115,13 +115,13 @@ public class QualityOfLife {
 
             if (WyvernMods.mineGemsToVehicle) {
                 Util.setReason("Send gems, source crystals, flint, etc. into vehicle.");
-                CtClass[] params2 = {
+                CtClass[] paramsCreateGem = {
                         CtClass.intType, CtClass.intType, CtClass.intType, CtClass.intType,
                         ctCreature, CtClass.doubleType, CtClass.booleanType, ctAction
                 };
-                String desc2 = Descriptor.ofMethod(ctItem, params2);
+                String descCreateGem = Descriptor.ofMethod(ctItem, paramsCreateGem);
                 replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook((com.wurmonline.server.creatures.Creature)$1, $0)) { $_ = $proceed($$); }";
-                Util.instrumentDescribed(thisClass, ctTileRockBehaviour, "createGem", desc2, "putItemInfrontof", replace);
+                Util.instrumentDescribed(thisClass, ctTileRockBehaviour, "createGem", descCreateGem, "putItemInfrontof", replace);
             }
 
             if (WyvernMods.regenerateStaminaOnVehicleAnySlope) {
