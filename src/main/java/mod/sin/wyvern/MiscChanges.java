@@ -424,7 +424,7 @@ public class MiscChanges {
             CtClass ctMethodsItems = classPool.get("com.wurmonline.server.behaviours.MethodsItems");
             if (WyvernMods.improveCombinedLeather) {
                 Util.setReason("Allow leather to improve beyond QL after being combinable.");
-                replace = "if(com.wurmonline.server.behaviours.MethodsItems.getImproveTemplateId($4) != 72){"
+                replace = "if($0.getTemplateId() != 72){"
                         + "  $_ = $proceed($$);"
                         + "}else{"
                         + "  $_ = false;"
@@ -561,8 +561,10 @@ public class MiscChanges {
             String desc5 = Descriptor.ofMethod(CtClass.booleanType, params5);
             if (WyvernMods.fasterCharcoalBurn) {
                 Util.setReason("Double the rate at which charcoal piles produce items.");
-                replace = "this.createDaleItems();"
-                        + "decayed = this.setDamage(this.damage + 1.0f * this.getDamageModifier());"
+                replace = "if(this.getTemplateId() == 318){"
+                        + "  this.createDaleItems();"
+                        + "  decayed = this.setDamage(this.damage + 1.0f * this.getDamageModifier());"
+                        + "}"
                         + "$_ = $proceed($$);";
                 Util.instrumentDescribed(thisClass, ctItem, "poll", desc5, "createDaleItems", replace);
             }
