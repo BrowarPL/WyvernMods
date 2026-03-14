@@ -46,13 +46,11 @@ public class MiscChanges {
     public static void sendServerTabMessage(String channel, final String message, final int red, final int green, final int blue){
         DiscordRelay.sendToDiscord(channel, message, true);
         // WARNING: Never change this from a new Runnable. Lambdas are a lie and will break everything.
-        Runnable r = new Runnable() {
-            public void run() {
-                Message mess;
-                for (Player rec : Players.getInstance().getPlayers()) {
-                    mess = new Message(rec, (byte) 16, "Server", message, red, green, blue);
-                    rec.getCommunicator().sendMessage(mess);
-                }
+        Runnable r = () -> {
+            Message mess;
+            for (Player rec : Players.getInstance().getPlayers()) {
+                mess = new Message(rec, (byte) 16, "Server", message, red, green, blue);
+                rec.getCommunicator().sendMessage(mess);
             }
         };
         r.run();
@@ -61,25 +59,24 @@ public class MiscChanges {
         sendGlobalFreedomChat(sender, sender.getNameWithoutPrefixes(), message, red, green, blue);
     }
     public static void sendGlobalFreedomChat(final Creature sender, final String name, final String message, final int red, final int green, final int blue){
-        Runnable r = new Runnable() {
-            public void run() {
-                Message mess;
-                for (Player rec : Players.getInstance().getPlayers()) {
-                    mess = new Message(sender, (byte) 10, "GL-Freedom", "<" + name + "> " + message, red, green, blue);
-                    rec.getCommunicator().sendMessage(mess);
-                }
-                if (message.trim().length() > 1) {
-                    WcKingdomChat wc = new WcKingdomChat(WurmId.getNextWCCommandId(), sender.getWurmId(), name, message, false, (byte) 4, red, green, blue);
-                    if (!Servers.isThisLoginServer()) {
-                        wc.sendToLoginServer();
-                    } else {
-                        wc.sendFromLoginServer();
-                    }
+        Runnable r = () -> {
+            Message mess;
+            for (Player rec : Players.getInstance().getPlayers()) {
+                mess = new Message(sender, (byte) 10, "GL-Freedom", "<" + name + "> " + message, red, green, blue);
+                rec.getCommunicator().sendMessage(mess);
+            }
+            if (message.trim().length() > 1) {
+                WcKingdomChat wc = new WcKingdomChat(WurmId.getNextWCCommandId(), sender.getWurmId(), name, message, false, (byte) 4, red, green, blue);
+                if (!Servers.isThisLoginServer()) {
+                    wc.sendToLoginServer();
+                } else {
+                    wc.sendFromLoginServer();
                 }
             }
         };
         r.run();
     }
+    @SuppressWarnings("unused")
     public static void broadCastDeathsPvE(Player player, Map<Long, Long> attackers){
         StringBuilder attackerString = new StringBuilder();
         final long now = System.currentTimeMillis();
@@ -104,6 +101,7 @@ public class MiscChanges {
             Players.getInstance().broadCastDeathInfo(player, attackerString.toString());
         }
     }
+    @SuppressWarnings("unused")
     public static void broadCastDeaths(Creature player, String slayers){
         String slayMessage = "slain by ";
         sendGlobalFreedomChat(player, slayMessage+slayers, 200, 25, 25);
@@ -160,6 +158,7 @@ public class MiscChanges {
             DbConnector.returnConnection(dbcon);
         }
     }
+    @SuppressWarnings("unused")
     public static boolean checkMayorCommand(Item item, Creature creature){
         if(Servers.localServer.PVPSERVER){
             return false;
@@ -171,15 +170,14 @@ public class MiscChanges {
                     Village v = creature.getCitizenVillage();
                     if(v.getMayor().getId() == creature.getWurmId()){
                         VolaTile vt = Zones.getTileOrNull(item.getTilePos(), item.isOnSurface());
-                        if(vt != null && vt.getVillage() != null && vt.getVillage() == v){
-                            return true;
-                        }
+                        return vt != null && vt.getVillage() != null && vt.getVillage() == v;
                     }
                 }
             }
         }
         return false;
     }
+    @SuppressWarnings("unused")
     public static float getFoodOpulenceBonus(Item food){
         float mult = 1.0f;
         if(food.getSpellEffectPower(Enchants.BUFF_OPULENCE) > 0f){
@@ -187,17 +185,19 @@ public class MiscChanges {
         }
         return food.getFoodComplexity()*mult;
     }
+    @SuppressWarnings("unused")
     public static long getBedBonus(long secs, long bed){
         Optional<Item> beds = Items.getItemOptional(bed);
         if(beds.isPresent()) {
             Item bedItem = beds.get();
             if(bedItem.isBed()){
-                secs *= 1+(bedItem.getCurrentQualityLevel()*0.005f);
+                secs *= (long) (1+(bedItem.getCurrentQualityLevel()*0.005f));
             }
         }
         secs *= 2;
         return secs;
     }
+    @SuppressWarnings("unused")
     public static boolean royalSmithImprove(Creature performer, Skill improve){
         return performer.isRoyalSmith()
                 &&(improve.getNumber() == SkillList.SMITHING_ARMOUR_CHAIN
@@ -210,11 +210,13 @@ public class MiscChanges {
                 || improve.getNumber() == SkillList.SMITHING_WEAPON_BLADES
                 || improve.getNumber() == SkillList.SMITHING_WEAPON_HEADS);
     }
+    @SuppressWarnings("unused")
     public static int getNewFoodFill(float qlevel){
         float startPercent = 0.004f;
         float endPercent = 0.015f;
         return (int) ((startPercent*(1f-qlevel/100f)+endPercent*(qlevel/100f))*65535);
     }
+    @SuppressWarnings("unused")
     public static boolean rollRarityImprove(Item source, int usedWeight){
         int templateWeight = source.getTemplate().getWeightGrams();
         float percentUsage = (float) usedWeight / (float) templateWeight;
@@ -224,6 +226,7 @@ public class MiscChanges {
 
     protected static final int rarityChance = 3600;
     protected static HashMap<Long,Integer> pseudoMap = new HashMap<>();
+    @SuppressWarnings("unused")
     public static boolean getRarityWindowChance(long wurmid){ //nextInt checks against 0. False is true, true is false.
         if(pseudoMap.containsKey(wurmid)){
             int currentChance = pseudoMap.get(wurmid);
@@ -239,6 +242,7 @@ public class MiscChanges {
             return !(Server.rand.nextInt(rarityChance) == 0);
         }
     }
+    @SuppressWarnings("unused")
     public static byte getNewCreationRarity(SimpleCreationEntry entry, Item source, Item target, ItemTemplate template){
         if(source.getRarity() > 0 || target.getRarity() > 0) {
             byte sRarity = source.getRarity();
@@ -287,6 +291,7 @@ public class MiscChanges {
         return 0;
     }
 
+    @SuppressWarnings("unused")
     public static Titles.Title[] cleanTitles(Titles.Title[] titles){
         ArrayList<Titles.Title> arrTitles = new ArrayList<>();
         for(Titles.Title title : titles){
@@ -301,18 +306,16 @@ public class MiscChanges {
         return arrTitles.toArray(new Titles.Title[0]);
     }
 
+    @SuppressWarnings("unused")
     public static boolean shouldSendBuff(SpellEffectsEnum effect){
         // Continue not showing any that don't have a buff in the first place
         if (!effect.isSendToBuffBar()){
             return false;
         }
         // Resistances and vulnerabilities are 20 - 43
-        if (effect.getTypeId() <= 43 && effect.getTypeId() >= 20){
-            return false;
-        }
+        return effect.getTypeId() > 43 || effect.getTypeId() < 20;
 
         // Is send to buff bar and not something we're stopping, so allow it.
-        return true;
     }
 
     public static void changeExistingTitles(){
@@ -348,14 +351,6 @@ public class MiscChanges {
             if (WyvernMods.enableInfoTab) {
                 CtMethod m = ctPlayers.getDeclaredMethod("sendStartGlobalKingdomChat");
                 String infoTabTitle = WyvernMods.infoTabName;
-                // Initial messages:
-                //String[] infoTabLine = (String[]) WyvernMods.infoTabLines.toArray();
-                /*String[] infoTabLine = {"Server Thread: https://forum.wurmonline.com/index.php?/topic/162067-revenant-modded-pvepvp-3x-action-new-skillgain/",
-                        "Website/Maps: https://www.sarcasuals.com/",
-                        "Server Discord: https://discord.gg/r8QNXAC",
-                        "Server Data: https://docs.google.com/spreadsheets/d/1yjqTHoxUan4LIldI3jgrXZgXj1M2ENQ4MXniPUz0rE4",
-                        "Server Wiki/Documentation: https://docs.google.com/document/d/1cbPi7-vZnjaiYrENhaefzjK_Wz7_F1CcPYJtC6uCi98/edit?usp=sharing",
-                        "Patreon: https://www.patreon.com/sindusk"};*/
                 StringBuilder str = new StringBuilder("{ com.wurmonline.server.Message mess;");
                 for (String anInfoTabLine : WyvernMods.infoTabLines) {
                     str.append(" mess = new com.wurmonline.server.Message(player, (byte)16, \"").append(infoTabTitle).append("\",\"").append(anInfoTabLine).append("\", 0, 255, 0);").append("        player.getCommunicator().sendMessage(mess);");
@@ -422,7 +417,7 @@ public class MiscChanges {
             CtClass ctMethodsItems = classPool.get("com.wurmonline.server.behaviours.MethodsItems");
             if (WyvernMods.improveCombinedLeather) {
                 Util.setReason("Allow leather to improve beyond QL after being combinable.");
-                replace = "if(com.wurmonline.server.behaviours.MethodsItems.getImproveTemplateId(target) != 72){"
+                replace = "if(com.wurmonline.server.behaviours.MethodsItems.getImproveTemplateId($4) != 72){"
                         + "  $_ = $proceed($$);"
                         + "}else{"
                         + "  $_ = false;"
@@ -448,8 +443,7 @@ public class MiscChanges {
                     constructor.instrument(new ExprEditor() {
                         public void edit(MethodCall m) throws CannotCompileException {
                             if (m.getMethodName().equals("isFatigue")) {
-                                m.replace("" +
-                                        "if(com.wurmonline.server.Servers.localServer.PVPSERVER){" +
+                                m.replace("if(com.wurmonline.server.Servers.localServer.PVPSERVER){" +
                                         "  if(!com.wurmonline.server.behaviours.Actions.isActionDestroy(this.getNumber())){" +
                                         "    $_ = false;" +
                                         "  }else{" +
@@ -485,7 +479,6 @@ public class MiscChanges {
             }
 
             if (WyvernMods.disableGMEmoteLimit) {
-                // - Allow GM's to bypass the 5 second emote sound limit. - //
                 Util.setReason("Allow GM's to bypass the 5 second emote sound limit.");
                 replace = "if(this.getPower() > 0){"
                         + "  return true;"
@@ -510,11 +503,6 @@ public class MiscChanges {
                 Util.insertBeforeDeclared(thisClass, ctPlayers, "broadCastDeathInfo", replace);
             }
 
-            /* Disabled 1.9 - PvE Death Tabs are now part of vanilla.
-            Util.setReason("Broadcast player death tabs always.");
-            replace = MiscChanges.class.getName()+".broadCastDeathsPvE($0, $0.attackers);";
-            Util.insertBeforeDeclared(thisClass, ctPlayer, "modifyRanking", replace);*/
-
             if (WyvernMods.disablePvPOnlyDeathTabs) {
                 Util.setReason("Disable PvP only death tabs.");
                 replace = "$_ = true;";
@@ -529,7 +517,6 @@ public class MiscChanges {
                     public void edit(FieldAccess fieldAccess) throws CannotCompileException {
                         if (Objects.equals("PVPSERVER", fieldAccess.getFieldName())) {
                             fieldAccess.replace("$_ = false;");
-                            logger.info("Instrumented PVPSERVER = false for Libila faith transfers.");
                         }
                     }
                 });
@@ -538,7 +525,6 @@ public class MiscChanges {
                     public void edit(FieldAccess fieldAccess) throws CannotCompileException {
                         if (Objects.equals("HOMESERVER", fieldAccess.getFieldName())) {
                             fieldAccess.replace("$_ = false;");
-                            logger.info("Instrumented HOMESERVER = false for Libila faith transfers.");
                         }
                     }
                 });
@@ -556,9 +542,7 @@ public class MiscChanges {
 
             if (WyvernMods.higherFoodAffinities) {
                 Util.setReason("Increase food affinity to give 30% increased skillgain instead of 10%.");
-                replace = "int timedAffinity = (com.wurmonline.server.skills.AffinitiesTimed.isTimedAffinity(pid, this.getNumber()) ? 2 : 0);"
-                        + "advanceMultiplicator *= (double)(1.0f + (float)timedAffinity * 0.1f);"
-                        + "$_ = $proceed($$);";
+                replace = "if(com.wurmonline.server.skills.AffinitiesTimed.isTimedAffinity(this.parent.getId(), this.getNumber())) { advanceMultiplicator *= 1.181818d; } $_ = $proceed($$);";
                 Util.instrumentDescribed(thisClass, ctSkill, "alterSkill", desc4, "hasSleepBonus", replace);
             }
 
@@ -581,9 +565,8 @@ public class MiscChanges {
             if (WyvernMods.uncapTraderItemCount) {
                 ctTradeHandler.getDeclaredMethod("addItemsToTrade").instrument(new ExprEditor() {
                     public void edit(MethodCall m) throws CannotCompileException {
-                        if (m.getMethodName().equals("size") && m.getLineNumber() > 200) { // I don't think the line number check matters, but I'm leaving it here anyway.
+                        if (m.getMethodName().equals("size") && m.getLineNumber() > 200) {
                             m.replace("$_ = 1;");
-                            logger.info("Instrumented size for trades to allow traders to show more than 9 items at a time.");
                         }
                     }
                 });
@@ -600,18 +583,6 @@ public class MiscChanges {
                 Util.instrumentDeclared(thisClass, ctCommunicator, "reallyHandle_CMD_ITEM_CREATION_LIST", "log", replace);
             }
 
-            //1f+0.5f*(1f-Math.pow(2, -Math.pow((eff-1f), pow1)/pow2))
-        	/* Disabled in 1.9 - Fixed with Priest Update.
-        	Util.setReason("Fix 100+ quality or power making certain interaction broken.");
-        	replace = "{"
-        			+ "double pow1 = 1.0;"
-        			+ "double pow2 = 3.0;"
-        			+ "double newEff = $1 >= 1.0 ? 1.0+0.5*(1.0-Math.pow(2.0, -Math.pow(($1-1.0), pow1)/pow2)) : Math.max(0.05, 1.0 - (1.0 - $1) * (1.0 - $1));"
-        			+ "return newEff;"
-        			+ "}";
-        	Util.setBodyDeclared(thisClass, ctServer, "getBuffedQualityEffect", replace);*/
-
-            // double advanceMultiplicator, boolean decay, float times, boolean useNewSystem, double skillDivider)
             CtClass[] params = {
                     CtClass.doubleType,
                     CtClass.booleanType,
@@ -655,19 +626,11 @@ public class MiscChanges {
                 }
             }
 
+            // Domy wyłączone na życzenie użytkownika
+            /*
             CtClass ctMethodsStructure = classPool.get("com.wurmonline.server.behaviours.MethodsStructure");
-            if (WyvernMods.largerHouses) {
-                Util.setReason("Allow players to construct larger houses.");
-                float carpentryMultiplier = 2f;
-                replace = "if(!com.wurmonline.server.Servers.localServer.PVPSERVER){" +
-                        "  $_ = $proceed($$)*" + carpentryMultiplier + ";" +
-                        "}else{" +
-                        "  $_ = $proceed($$);" +
-                        "}";
-                Util.instrumentDeclared(thisClass, ctMethodsStructure, "hasEnoughSkillToExpandStructure", "getKnowledge", replace);
-                Util.setReason("Allow players to construct larger houses.");
-                Util.instrumentDeclared(thisClass, ctMethodsStructure, "hasEnoughSkillToContractStructure", "getKnowledge", replace);
-            }
+            if (WyvernMods.largerHouses) { ... }
+            */
 
             if (WyvernMods.reduceImbuePower) {
                 Util.setReason("Reduce power of imbues.");
@@ -711,7 +674,6 @@ public class MiscChanges {
                     public void edit(FieldAccess fieldAccess) throws CannotCompileException {
                         if (Objects.equals("PVPSERVER", fieldAccess.getFieldName()))
                             fieldAccess.replace("$_ = true;");
-                        logger.info("Instrumented SpellGenerator PVPSERVER field to enable all spells.");
                     }
                 });
             }
@@ -728,7 +690,6 @@ public class MiscChanges {
                 Util.instrumentDeclared(thisClass, ctTempStates, "checkForChange", "setName", replace);
 
                 Util.setReason("Stop royal food decay.");
-                // Item parent, int parentTemp, boolean insideStructure, boolean deeded, boolean saveLastMaintained, boolean inMagicContainer, boolean inTrashbin
                 CtClass[] params11 = {
                         ctItem,
                         CtClass.intType,
@@ -784,7 +745,7 @@ public class MiscChanges {
 
             if (WyvernMods.royalSmithImproveFaster) {
                 Util.setReason("Allow royal smith to improve smithing items faster.");
-                replace = "if(" + MiscChanges.class.getName() + ".royalSmithImprove($1, improve)){" +
+                replace = "if(" + MiscChanges.class.getName() + ".royalSmithImprove((com.wurmonline.server.creatures.Creature)$1, improve)){" +
                         "  $_ = $proceed($$) * 0.9f;" +
                         "}else{" +
                         "  $_ = $proceed($$);" +
@@ -793,7 +754,7 @@ public class MiscChanges {
                 Util.setReason("Allow royal smith to improve smithing items faster.");
                 Util.instrumentDeclared(thisClass, ctMethodsItems, "polishItem", "getImproveActionTime", replace);
                 Util.setReason("Allow royal smith to improve smithing items faster. Also make tempering use water enchants.");
-                replace = "if(" + MiscChanges.class.getName() + ".royalSmithImprove($1, improve)){" +
+                replace = "if(" + MiscChanges.class.getName() + ".royalSmithImprove((com.wurmonline.server.creatures.Creature)$1, improve)){" +
                         "  $_ = $proceed($1, target) * 0.9f;" +
                         "}else{" +
                         "  $_ = $proceed($1, target);" +
@@ -801,11 +762,9 @@ public class MiscChanges {
                 Util.instrumentDeclared(thisClass, ctMethodsItems, "temper", "getImproveActionTime", replace);
             }
 
-            // Fix for body strength not working properly when mounted. (Bdew)
             if (WyvernMods.fixMountedBodyStrength) {
                 ctCreature.getMethod("getTraitMovePercent", "(Z)F").instrument(new ExprEditor() {
                     private boolean first = true;
-
                     @Override
                     public void edit(MethodCall m) throws CannotCompileException {
                         if (m.getMethodName().equals("getStrengthSkill")) {
@@ -832,30 +791,6 @@ public class MiscChanges {
                 Util.instrumentDescribed(thisClass, ctMethodsItems, "eat", desc12, "modifyHunger", replace);
             }
 
-            // Fix for butchering not giving skill gain when butchering too many items
-            /* Disabled in 1.9 - No longer necessary due to fishing changes.
-            ctMethodsItems.getDeclaredMethod("filet").instrument(new ExprEditor() {
-                private boolean first = true;
-
-                @Override
-                public void edit(MethodCall m) throws CannotCompileException {
-                    if (m.getMethodName().equals("skillCheck")) {
-                        if (first) {
-                            first = false;
-                        }else {
-                            m.replace("$_ = $proceed($1, $2, $3, false, $5);");
-                            logger.info("Replaced filet skill check to ensure butchering skill is always gained.");
-                        }
-                    }
-                }
-            });*/
-
-            // How to add a skill!
-            /*CtClass ctSkillSystem = classPool.get("com.wurmonline.server.skills.SkillSystem");
-            CtConstructor ctSkillSystemConstructor = ctSkillSystem.getClassInitializer();
-            ctSkillSystemConstructor.insertAfter("com.wurmonline.server.skills.SkillSystem.addSkillTemplate(new "+SkillTemplate.class.getName()+"(10096,
-                     \"Battle Yoyos\", 4000.0f, new int[]{1022}, 1209600000l, (short) 4, true, true));");*/
-
             if (WyvernMods.rareMaterialImprove) {
                 Util.setReason("Hook for rare material usage in improvement.");
                 replace = "if(" + MiscChanges.class.getName() + ".rollRarityImprove($0, usedWeight)){" +
@@ -880,7 +815,6 @@ public class MiscChanges {
             if (WyvernMods.rareCreationAdjustments) {
                 ctSimpleCreationEntry.getDeclaredMethod("run").instrument(new ExprEditor() {
                     private boolean first = true;
-
                     @Override
                     public void edit(MethodCall m) throws CannotCompileException {
                         if (m.getMethodName().equals("getRarity")) {
@@ -890,7 +824,6 @@ public class MiscChanges {
                                         "  act.setRarity(newRarity);" +
                                         "}" +
                                         "$_ = $proceed($$);");
-                                logger.info("Replaced getRarity in SimpleCreationEntry to allow functional rare creations.");
                                 first = false;
                             }
                         }
@@ -1010,7 +943,7 @@ public class MiscChanges {
                 Util.instrumentDescribed(thisClass, ctCommunicator, "sendAddStatusEffect", desc16, "isSendToBuffBar", replace);
             }
 
-            // 1.9 Achievement fix [Bdew]
+            // 1.9 Achievement fix
             if (WyvernMods.sqlAchievementFix) {
                 classPool.getCtClass("com.wurmonline.server.players.Achievements").getMethod("loadAllAchievements", "()V")
                         .instrument(new ExprEditor() {

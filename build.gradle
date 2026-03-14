@@ -15,18 +15,15 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-var serverJar = files("../../libraries/server.jar")
-var commonJar = files("../../libraries/common.jar")
+// Target the local folder directly
+var serverJar = files("lib/server.jar")
+var commonJar = files("lib/common.jar")
 
 dependencies {
-    if(serverJar){
-        implementation(serverJar)
-    }
-    if(commonJar){
-        implementation(commonJar)
-    }
-    compileOnly 'org.gotti.wurmunlimited:server:3720466'
-    compileOnly 'org.gotti.wurmunlimited:common:3720466'
+    // Force compilation against local, updated server files
+    compileOnly(serverJar)
+    compileOnly(commonJar)
+
     compileOnly 'org.gotti.wurmunlimited:server-modlauncher:0.45'
     compileOnly 'com.github.Sindusk:sindusklibrary:v2.5'
     compileOnly 'com.github.bdew-wurm:bdew_server_mod_tools:v2.1.0'

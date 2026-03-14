@@ -88,7 +88,7 @@ public class QualityOfLife {
 
             if (WyvernMods.mineCaveToVehicle) {
                 Util.setReason("Allow players to mine directly into vehicles.");
-                replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook(performer, $0)) { $_ = $proceed($$); }";
+                replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook((com.wurmonline.server.creatures.Creature)$1, $0)) { $_ = $proceed($$); }";
                 Util.instrumentDescribed(thisClass, ctCaveWallBehaviour, "action", desc1, "putItemInfrontof", replace);
             }
 
@@ -102,7 +102,7 @@ public class QualityOfLife {
             CtClass ctMethodsItems = classPool.get("com.wurmonline.server.behaviours.MethodsItems");
             if (WyvernMods.chopLogsToVehicle) {
                 Util.setReason("Allow players to chop logs directly into vehicles.");
-                replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook(performer, $0)) { $_ = $proceed($$); }";
+                replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook((com.wurmonline.server.creatures.Creature)$1, $0)) { $_ = $proceed($$); }";
                 Util.instrumentDeclared(thisClass, ctMethodsItems, "chop", "putItemInfrontof", replace);
             }
 
@@ -120,7 +120,7 @@ public class QualityOfLife {
                         ctCreature, CtClass.doubleType, CtClass.booleanType, ctAction
                 };
                 String desc2 = Descriptor.ofMethod(ctItem, params2);
-                replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook(performer, $0)) { $_ = $proceed($$); }";
+                replace = "if (!" + QualityOfLife.class.getName() + ".vehicleHook((com.wurmonline.server.creatures.Creature)$1, $0)) { $_ = $proceed($$); }";
                 Util.instrumentDescribed(thisClass, ctTileRockBehaviour, "createGem", desc2, "putItemInfrontof", replace);
             }
 
