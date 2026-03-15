@@ -38,6 +38,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MiscChanges {
@@ -371,6 +372,17 @@ public class MiscChanges {
             throw new RuntimeException(e);
         }
     }
+    
+    @SuppressWarnings("unused")
+    public static void safeCheckDensTemplate(int templateId, boolean whileRunning) {
+        try {
+            java.lang.reflect.Method checkTemplateMethod = com.wurmonline.server.zones.Dens.class.getDeclaredMethod("checkTemplate", int.class, boolean.class);
+            checkTemplateMethod.setAccessible(true);
+            checkTemplateMethod.invoke(null, templateId, whileRunning);
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to safely run checkTemplate for Den ID: " + templateId + " (Likely SQL Constraint)", e);
+        }
+    }
 
     @SuppressWarnings("unused")
     public static void preInit(){
@@ -447,8 +459,8 @@ public class MiscChanges {
 
             CtClass ctDens = classPool.get("com.wurmonline.server.zones.Dens");
             if (WyvernMods.allowFacebreykerNaturalSpawn) {
-                Util.setReason("Add Facebreyker to the natural legendary spawn list.");
-                replace = "com.wurmonline.server.zones.Dens.checkTemplate(2147483643, whileRunning);";
+                Util.setReason("Add Facebreyker to the natural legendary spawn list safely.");
+                replace = MiscChanges.class.getName() + ".safeCheckDensTemplate(2147483643, whileRunning);";
                 Util.insertBeforeDeclared(thisClass, ctDens, "checkDens", replace);
             }
 
