@@ -989,11 +989,11 @@ public class MiscChanges {
             CtClass[] setVehicleParams = {CtClass.longType, CtClass.booleanType, CtClass.byteType, CtClass.intType, CtClass.intType};
             String setVehicleDesc = Descriptor.ofMethod(CtClass.voidType, setVehicleParams);
             ctCreature.getMethod("setVehicle", setVehicleDesc).insertBefore(
-                    "if ($4 < 0 || $5 < 0) {"
+                    "if (!this.isOnSurface() && ($4 < 0 || $5 < 0)) {"
                     + "  $4 = (int)(this.getPosX() / 4.0F);"
                     + "  $5 = (int)(this.getPosY() / 4.0F);"
-                    + "  $4 = Math.max(0, Math.min((1 << 11) - 1, $4));"
-                    + "  $5 = Math.max(0, Math.min((1 << 11) - 1, $5));"
+                    + "  $4 = Math.max(0, Math.min(com.wurmonline.server.zones.Zones.worldTileSizeX - 1, $4));"
+                    + "  $5 = Math.max(0, Math.min(com.wurmonline.server.zones.Zones.worldTileSizeY - 1, $5));"
                     + "}"
             );
 
