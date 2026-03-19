@@ -7,23 +7,18 @@ import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.items.ItemSpellEffects;
 import com.wurmonline.server.players.Player;
-import com.wurmonline.server.skills.Skill;
-import com.wurmonline.server.spells.ItemEnchantment;
 import com.wurmonline.server.spells.Spell;
 import com.wurmonline.server.spells.SpellEffect;
 import com.wurmonline.server.spells.Spells;
 import mod.sin.items.EnchantOrb;
-import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.gotti.wurmunlimited.modsupport.actions.ActionPerformer;
 import org.gotti.wurmunlimited.modsupport.actions.BehaviourProvider;
 import org.gotti.wurmunlimited.modsupport.actions.ModAction;
 import org.gotti.wurmunlimited.modsupport.actions.ModActions;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class EnchantOrbAction implements ModAction {
@@ -97,7 +92,7 @@ public class EnchantOrbAction implements ModAction {
 					}
 					for(SpellEffect eff : sourceEffects){
 						Spell spell = Spells.getEnchantment(eff.type);
-						boolean canEnchant = false;// = Spell.mayBeEnchanted(target);
+						boolean canEnchant = false;
 						byte type = eff.type;
 						if(spell == null){
 							if(eff.type < -60){ // It's a rune
@@ -131,17 +126,7 @@ public class EnchantOrbAction implements ModAction {
 								}
 							}
 						}else {
-							try {
-								Method m;
-								if (spell instanceof ItemEnchantment){
-									m = ItemEnchantment.class.getDeclaredMethod("precondition", Skill.class, Creature.class, Item.class);
-								}else {
-									m = spell.getClass().getDeclaredMethod("precondition", Skill.class, Creature.class, Item.class);
-								}
-								canEnchant = ReflectionUtil.callPrivateMethod(spell, m, player.getChannelingSkill(), performer, target);
-							} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException e) {
-								logger.log(Level.WARNING, "", e);
-							}
+							canEnchant = spell.isValidItemType(performer, target);
 						}
 						if(canEnchant){
 							if(teffs.getSpellEffect(type) != null){
@@ -158,6 +143,8 @@ public class EnchantOrbAction implements ModAction {
 							teffs.addSpellEffect(newEff);
 							effs.removeSpellEffect(type);
 							player.getCommunicator().sendSafeServerMessage("The "+eff.getName()+" transfers to the "+target.getTemplate().getName()+".");
+						} else {
+							player.getCommunicator().sendAlertServerMessage("The "+target.getTemplate().getName()+" is not a valid target for " + eff.getName() + ".");
 						}
 					}
 					SpellEffect[] finalEffects = effs.getEffects();
