@@ -6,9 +6,14 @@ import com.wurmonline.server.skills.SkillList;
 import com.wurmonline.server.skills.SkillSystem;
 import com.wurmonline.server.skills.SkillTemplate;
 import com.wurmonline.server.skills.Skills;
+import com.wurmonline.server.players.Player;
+import com.wurmonline.server.players.Titles;
+import com.wurmonline.server.Players;
+import com.wurmonline.server.WurmId;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
+import javassist.CannotCompileException;
 import mod.sin.lib.Util;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.gotti.wurmunlimited.modloader.classhooks.HookException;
@@ -106,6 +111,34 @@ public class SkillChanges {
             logger.log(Level.WARNING, "Failed to set tickTime for skill with ID " + id + "!", e);
         }
     }
+    
+    // Fallback manual title assignment to ensure level 70 titles are always awarded
+    @SuppressWarnings("unused")
+    public static void manualTitleCheck(Skill skill, double oldknowledge, double newknowledge) {
+        try {
+            if (oldknowledge < 70.0 && newknowledge >= 70.0) {
+                Skills parent = ReflectionUtil.getPrivateField(skill, ReflectionUtil.getField(skill.getClass(), "parent"));
+                if (parent != null) {
+                    long pid = parent.getId();
+                    if (WurmId.getType(pid) == 0) { // is player
+                        Titles.Title title = Titles.Title.getTitle(skill.getNumber(), Titles.TitleType.MINOR);
+                        if (title != null) {
+                            Player p = Players.getInstance().getPlayerOrNull(pid);
+                            if (p != null) {
+                                p.addTitle(title);
+                                p.achievement(564); // trigger minor achievement manually
+                                if (skill.getNumber() == 10066) {
+                                    p.maybeTriggerAchievement(633, true);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Error in manual title check for skill: " + skill.getName(), e);
+        }
+    }
 
     public static void onServerStarted(){
         for (Map.Entry<Integer, String> entry : WyvernMods.skillName.entrySet()){
@@ -147,8 +180,12 @@ public class SkillChanges {
                         + "}";
                 Util.setBodyDeclared(thisClass, ctSkill, "doSkillGainNew", replace);
             }
+            
+            // Add safety net for level 70 titles
+            CtClass ctSkill = classPool.get("com.wurmonline.server.skills.Skill");
+            ctSkill.getDeclaredMethod("checkTitleChange").insertAfter(SkillChanges.class.getName() + ".manualTitleCheck(this, $1, $2);");
 
-        } catch (NotFoundException | IllegalArgumentException | ClassCastException e) {
+        } catch (CannotCompileException | NotFoundException | IllegalArgumentException | ClassCastException e) {
             throw new HookException(e);
         }
     }
